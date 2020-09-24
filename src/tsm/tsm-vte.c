@@ -243,6 +243,28 @@ static uint8_t color_palette_vga[TSM_COLOR_NUM][3] = {
 	[TSM_COLOR_BACKGROUND]    = {   0,   0,   0 }, /* black */
 };
 
+static uint8_t color_palette_nord[TSM_COLOR_NUM][3] = {
+	[TSM_COLOR_BLACK]         = {  59,  66,  82 }, /* black */
+	[TSM_COLOR_RED]           = { 191,  97, 106 }, /* red */
+	[TSM_COLOR_GREEN]         = { 163, 190, 140 }, /* green */
+	[TSM_COLOR_YELLOW]        = { 235, 203, 139 }, /* yellow */
+	[TSM_COLOR_BLUE]          = { 129, 161, 193 }, /* blue */
+	[TSM_COLOR_MAGENTA]       = { 180, 142, 173 }, /* magenta */
+	[TSM_COLOR_CYAN]          = { 136, 192, 208 }, /* cyan */
+	[TSM_COLOR_LIGHT_GREY]    = { 229, 233, 240 }, /* light grey */
+	[TSM_COLOR_DARK_GREY]     = {  76,  86, 106 }, /* dark grey */
+	[TSM_COLOR_LIGHT_RED]     = { 191,  97, 106 }, /* light red */
+	[TSM_COLOR_LIGHT_GREEN]   = { 163, 190, 140 }, /* light green */
+	[TSM_COLOR_LIGHT_YELLOW]  = { 235, 203, 139 }, /* light yellow */
+	[TSM_COLOR_LIGHT_BLUE]    = { 129, 161, 193 }, /* light blue */
+	[TSM_COLOR_LIGHT_MAGENTA] = { 180, 142, 173 }, /* light magenta */
+	[TSM_COLOR_LIGHT_CYAN]    = { 143, 188, 187 }, /* light cyan */
+	[TSM_COLOR_WHITE]         = { 236, 239, 244 }, /* white */
+
+	[TSM_COLOR_FOREGROUND]    = { 216, 222, 233 }, /* light grey */
+	[TSM_COLOR_BACKGROUND]    = {  46,  52,  64 }, /* black */
+};
+
 static uint8_t color_palette_solarized[TSM_COLOR_NUM][3] = {
 	[TSM_COLOR_BLACK]         = {   7,  54,  66 }, /* black */
 	[TSM_COLOR_RED]           = { 220,  50,  47 }, /* red */
@@ -382,6 +404,8 @@ static uint8_t (*get_palette(struct tsm_vte *vte))[3]
 
 	if (!strcmp(vte->palette_name, "custom") && vte->custom_palette_storage)
 		return vte->custom_palette_storage;
+	if (!strcmp(vte->palette_name, "nord"))
+		return color_palette_nord;
 	if (!strcmp(vte->palette_name, "solarized"))
 		return color_palette_solarized;
 	if (!strcmp(vte->palette_name, "solarized-black"))
