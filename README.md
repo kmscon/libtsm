@@ -65,7 +65,7 @@ The following options are available:
 
 ## Documentation
 There is currently no API documentation available. You can have a look at the
-example terminal-emulator gtkterm [src/gtktsm/gtktsm-terminal.c]
+example terminal-emulator gtkterm [gtktsm-terminal.c](src/gtktsm/gtktsm-terminal.c)
 
 ## License
 This software is licensed under the terms of an MIT-like license. Please see
