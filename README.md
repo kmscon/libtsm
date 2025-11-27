@@ -1,30 +1,35 @@
 # TSM - Terminal Emulator State Machine
 
-![Build Status](https://github.com/aetf/libtsm/actions/workflows/meson.yml/badge.svg?branch=main)
+![Build Status](https://github.com/kmscon/libtsm/actions/workflows/meson.yml/badge.svg?branch=main)
 
 TSM is a state machine for DEC VT100-VT520 compatible terminal emulators. It
 tries to support all common standards while keeping compatibility to existing
-emulators like xterm, gnome-terminal, konsole, ...
+emulators like xterm, gnome-terminal, konsole, ..
 
-This is a personal modified version. For more information, please refer to its original [README](README).
+TSM itself does not provide any rendering nor window management. It is a simple
+plain state machine without any external dependencies. It can be used to
+implement terminal emulators, but also to implement other applications that need
+to interpret terminal escape sequences.
 
-## Added feature
-+ More color palettes:
-    * soft-black
-    * [base16](https://github.com/chriskempson/base16-default-schemes){-light,-dark}
-    * solarized{,-black,-white}
-    * custom: set via API
-+ Support underline/italic rendering (with [a patched version of kmscon](https://github.com/Aetf/kmscon))
-+ Support 24-bit true color
-+ Support Ctrl + Arrow keys
-+ Support custom title using OSC
-+ Bug fixes:
-    * [Response to 'CSI c' contains random bytes][91335]
-    * [Fix invalid cpr values](https://github.com/Aetf/libtsm/pull/2)
+This library is very similar to libvte of the gnome project. However, libvte is
+highly bound to GTK+, which makes it unsuitable for non-graphics projects that
+need to parse escape sequences. Instead, TSM tries to restrict its API to
+terminal emulation only. Furthermore, TSM does not try to establish a new
+terminal emulation standard, but instead keeps compatibility as close to xterm
+as possible. This is why the TERM variable can be set to xterm-color256 with any
+TSM based terminal emulator.
 
-[91335]: https://bugs.freedesktop.org/show_bug.cgi?id=91335
+## Requirements
 
-## Build
+libtsm has no runtime requirements other than a ISO-C compatible C library.
+For keyboard key-symbols, the headers of libxkbcommon are needed during
+compile-time only. libtsm ships a copy of these headers if they are not
+available at compile-time.
+
+## Download
+Releases are available at https://github.com/kmscon/libtsm/releases
+
+## Build and install
 ```bash
 meson setup build
 cd build
@@ -35,7 +40,7 @@ meson install
 ### Build options
 Options may be supplied when configuring meson:
 ```bash
-meson -Dtests=true -Dextra_debug=true -Dgtktsm=true
+meson setup -Dtests=true -Dextra_debug=true -Dgtktsm=true build
 ```
 The following options are available:
 
@@ -43,7 +48,7 @@ The following options are available:
 |:---:|:---|:---:|
 | tests | Whether build the test suite | ON |
 | extra_debug | Whether to enable several non-standard debug options | OFF |
-| gtktsm | Whether to build the gtktsm example. This is linux-only as it uses epoll and friends. Therefore is disabled by default. | OFF |
+| gtktsm | Whether to build the gtktsm example. This is linux-only as it uses epoll and friends. Therefore, is disabled by default. | OFF |
 
 ## Dependencies
 ### Required
@@ -57,3 +62,18 @@ The following options are available:
 - cairo
 - pango
 - xkbcommon
+
+## Documentation
+There is currently no API documentation available. You can have a look at the
+example terminal-emulator gtkterm [src/gtktsm/gtktsm-terminal.c]
+
+## License
+This software is licensed under the terms of an MIT-like license. Please see
+[COPYING] for further information.
+
+## Contact
+This software is maintained by:
+ * David Rheinsberg <david@readahead.eu>
+ * Jocelyn Falempe <jfalempe@redhat.com>
+
+If you have any questions, do not hesitate to contact one of the maintainers.
