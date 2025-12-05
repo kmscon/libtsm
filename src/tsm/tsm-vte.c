@@ -1798,6 +1798,21 @@ static void csi_dsr(struct tsm_vte *vte)
 	}
 }
 
+static void csi_report_window_size(struct tsm_vte *vte)
+{
+	char buf[64];
+	unsigned int w, h, len, resp;
+
+	resp = vte->csi_argv[0] == 18 ? 8 : 9;
+
+	w = tsm_screen_get_width(vte->con);
+	h = tsm_screen_get_height(vte->con);
+	len = snprintf(buf, sizeof(buf), "\e[%u;%u;%ut", resp,  h + 1, w + 1);
+	if (len >= sizeof(buf))
+		return;
+	vte_write(vte, buf, len);
+}
+
 static void do_csi(struct tsm_vte *vte, uint32_t data)
 {
 	int num, x, y, upper, lower;
@@ -2041,6 +2056,12 @@ static void do_csi(struct tsm_vte *vte, uint32_t data)
 		if (num <= 0)
 			num = 1;
 		tsm_screen_scroll_down(vte->con, num);
+		break;
+	case 't': /* ST */
+		if (vte->csi_argv[0] == 18 || vte->csi_argv[0] == 19)
+			csi_report_window_size(vte);
+		else
+			llog_debug(vte, "unhandled CSI t sequence %c", data);
 		break;
 	default:
 		llog_debug(vte, "unhandled CSI sequence %c", data);
