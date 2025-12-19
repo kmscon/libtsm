@@ -31,7 +31,7 @@ Releases are available at https://github.com/kmscon/libtsm/releases
 
 ## Build and install
 ```bash
-meson setup build
+meson setup -Dtests=false build
 cd build
 meson compile
 meson install
