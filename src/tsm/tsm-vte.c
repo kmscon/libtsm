@@ -2109,7 +2109,7 @@ static void vte_write_xcolor(struct tsm_vte *vte, char *code,
 			     const char *end_seq,
 			     uint8_t r, uint8_t g, uint8_t b)
 {
-	char buf[32];
+	char buf[64];
 	snprintf(buf, sizeof(buf), "\e]%s;rgb:%02x%02x/%02x%02x/%02x%02x%s",
 		 code, r, r, g, g, b, b, end_seq);
 	vte_write(vte, buf, strlen(buf));
