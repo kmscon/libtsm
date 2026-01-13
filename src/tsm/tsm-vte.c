@@ -3323,7 +3323,12 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 				return false;
 			}
 
-			/* reply_flags already set to button | modifiers - use it for drag */
+			/* For drags (button >= 32), use actual button value from reply_flags.
+			 * For hover motion (button < 32, only in mode ANY), use 35 (move marker). */
+			if (button < 32) {
+				reply_flags = 35;
+			}
+			/* else: reply_flags already set to button | modifiers for drags */
 			pressed = true;
 
 			vte->mouse_last_col = cell_x;
@@ -3336,7 +3341,12 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 		return true;
 	} else if (vte->mouse_mode == TSM_VTE_MOUSE_MODE_PIXEL) {
 		if (event == TSM_MOUSE_EVENT_MOVED) {
-			reply_flags = 35;
+			/* For drags (button >= 32), use actual button value from reply_flags.
+			 * For hover motion (button < 32, only in mode ANY), use 35 (move marker). */
+			if (button < 32) {
+				reply_flags = 35;
+			}
+			/* else: reply_flags already set to button | modifiers for drags */
 			pressed = true;
 		}
 
