@@ -3267,7 +3267,13 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 	bool pressed = event & TSM_MOUSE_EVENT_PRESSED;
 
 	/* drop move event if we don't wait for move events */
-	if ((vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10 || vte->mouse_event != TSM_VTE_MOUSE_EVENT_ANY) && (event & TSM_MOUSE_EVENT_MOVED)) {
+	/* In mode 1002 (BTN), accept MOVED with button pressed (drag, button >= 32) */
+	/* In mode 1003 (ANY), accept all MOVED events */
+	bool is_drag = (button >= 32 && button <= 34);
+	if ((vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10 ||
+	     (vte->mouse_event == TSM_VTE_MOUSE_EVENT_BTN && !is_drag) ||
+	     (vte->mouse_event != TSM_VTE_MOUSE_EVENT_BTN && vte->mouse_event != TSM_VTE_MOUSE_EVENT_ANY)) &&
+	    (event & TSM_MOUSE_EVENT_MOVED)) {
 		return false;
 	}
 
@@ -3317,7 +3323,7 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 				return false;
 			}
 
-			reply_flags = 35;
+			/* reply_flags already set to button | modifiers - use it for drag */
 			pressed = true;
 
 			vte->mouse_last_col = cell_x;
