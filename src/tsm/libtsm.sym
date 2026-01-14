@@ -137,3 +137,8 @@ LIBTSM_4_3 {
 global:
 	tsm_screen_selection_word;
 } LIBTSM_4_1;
+
+LIBTSM_4_4 {
+global:
+	tsm_vte_paste;
+} LIBTSM_4_3;

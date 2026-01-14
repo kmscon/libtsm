@@ -377,6 +377,7 @@ enum tsm_vte_color {
 #define TSM_VTE_MOUSE_EVENT_ANY  1003 /* sends position on mouse click and mouse move */
 #define TSM_VTE_MOUSE_MODE_SGR   1006 /* modern mode that allows unlimited x and y coordinates */
 #define TSM_VTE_MOUSE_MODE_PIXEL 1016 /* sends pixel coordinates instead of cell coordinates */
+#define TSM_VTE_BRACKETED_PASTE  2004 /* enclose paste data with escape characters */
 
 enum tsm_mouse_track_mode {
 	TSM_MOUSE_TRACK_DISABLE = 0, /* don't track mouse events */
@@ -520,6 +521,7 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
         unsigned int cell_y, unsigned int pixel_x, unsigned int pixel_y,
         unsigned int button, unsigned int event, unsigned char flags);
 
+void tsm_vte_paste(struct tsm_vte *vte, const char *data);
 /** @} */
 
 #ifdef __cplusplus
