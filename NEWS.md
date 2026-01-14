@@ -1,5 +1,17 @@
 # libtsm Release News
 
+## CHANGES WITH 4.4.0:
+### New features
+* Add support for CSI 18t and 19t command
+* Add bracketed paste support (DEC 2004)
+
+### Bug fixes
+ * Moved back to https://github.com/kmscon/libtsm
+ * Fix SGR and PIXEL mouse modes blocked by mouse_event check
+ * Fix SGR mouse drag tracking in modes 1002 and 1003
+ * Fix PIXEL mode drag tracking: remove hardcoded reply_flags
+ * Fix ppc64el build error
+
 ## CHANGES WITH 4.3.0:
 ### New features
 * Add OSC 4, 10 and 11 support (only read color, not set it) https://github.com/Aetf/libtsm/pull/55
