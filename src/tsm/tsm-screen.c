@@ -269,6 +269,43 @@ static void link_to_scrollback(struct tsm_screen *con, struct line *line)
 	}
 }
 
+/* Remove num lines from scroll back to current buffer */
+static void remove_from_sb(struct tsm_screen *con, unsigned int num)
+{
+	struct line *tmp;
+
+	/* TODO: more sophisticated ageing */
+	con->age = con->age_cnt;
+
+	if (!con->sb_max || !con->sb_count || !con->sb_last)
+		return;
+
+	if (num > con->sb_count)
+		num = con->sb_count;
+
+	while (num--) {
+		tmp = con->sb_last;
+		con->sb_last = tmp->prev;
+
+		if (tmp->prev)
+			tmp->prev->next = NULL;
+		else
+			con->sb_first = NULL;
+		--con->sb_count;
+
+		tmp->next = NULL;
+		tmp->prev = NULL;
+		tmp->sb_id = 0;
+
+		if (con->sb_pos == tmp) {
+			con->sb_pos_num = 0;
+			con->sb_pos = NULL;
+		}
+		memcpy(con->lines[num], tmp, sizeof(*tmp));
+		free(tmp);
+	}
+}
+
 static void screen_scroll_up(struct tsm_screen *con, unsigned int num)
 {
 	unsigned int i, j, max, pos;
@@ -730,11 +767,37 @@ int tsm_screen_resize(struct tsm_screen *con, unsigned int x,
 	/* scroll buffer if screen height shrinks */
 	if (y < con->size_y) {
 		diff = con->size_y - y;
-		screen_scroll_up(con, diff);
-		if (con->cursor_y > diff)
-			move_cursor(con, con->cursor_x, con->cursor_y - diff);
-		else
-			move_cursor(con, con->cursor_x, 0);
+		if (!con->sb_last || (con->flags & TSM_SCREEN_ALTERNATE)) {
+			/* If there is nothing in the scrollback buffer,
+			 * Only scroll up if the cursor would go off-screen */
+			if (con->cursor_y >= y) {
+				diff = y - con->cursor_y + 1;
+				tsm_screen_scroll_up(con, diff);
+				move_cursor(con, con->cursor_x, y - 1);
+			}
+		} else {
+			tsm_screen_scroll_up(con, diff);
+			if (con->cursor_y > diff)
+				move_cursor(con, con->cursor_x, con->cursor_y - diff);
+			else
+			 	move_cursor(con, con->cursor_x, 0);
+		}
+	} else if (y > con->size_y) {
+		diff = y - con->size_y;
+		if (diff > con->sb_count)
+			diff = con->sb_count;
+		/*
+		 * When increasing the terminal number of rows, we can move some
+		 * lines from the scrollback buffer to the main buffer.
+		 */
+		if (diff && !(con->flags & TSM_SCREEN_ALTERNATE)) {
+			con->size_y = y;
+			con->margin_bottom = con->size_y - 1;
+			tsm_screen_scroll_down(con, diff);
+			remove_from_sb(con, diff);
+			move_cursor(con, con->cursor_x, con->cursor_y + diff);
+			diff--;
+		}
 	}
 
 	con->size_y = y;
