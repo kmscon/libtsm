@@ -176,6 +176,7 @@ struct tsm_vte {
 	unsigned int mouse_event;
 	unsigned int mouse_last_col;
 	unsigned int mouse_last_row;
+	bool bracketed_paste;
 
 	uint8_t (*custom_palette_storage)[3];
 	uint8_t (*palette)[3];
@@ -1755,6 +1756,9 @@ static void csi_mode(struct tsm_vte *vte, bool set)
 			    vte->mouse_cb(vte, vte->mouse_event, set, vte->mouse_data);
 			    continue;
 			}
+			continue;
+		case TSM_VTE_BRACKETED_PASTE:
+			vte->bracketed_paste = set;
 			continue;
 		default:
 			llog_debug(vte, "unknown DEC %set-Mode %d",
@@ -3357,4 +3361,23 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 	}
 
 	return false;
+}
+
+void tsm_vte_paste(struct tsm_vte *vte, const char *data)
+{
+	if (vte->bracketed_paste) {
+		const char start[] = "\e[200~";
+		const char end[] = "\e[201~";
+		char *buf;
+		int len;
+
+		len = strlen(data) + sizeof(start) + sizeof(end) + 1;
+		buf = malloc(len);
+		if (!buf)
+			return;
+		snprintf(buf, len, "%s%s%s", start, data, end);
+		vte_write(vte, buf, strlen(buf));
+		free(buf);
+	} else
+		vte_write(vte, data, strlen(data));
 }
