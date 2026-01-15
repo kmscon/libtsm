@@ -2065,7 +2065,11 @@ static void do_csi(struct tsm_vte *vte, uint32_t data)
 		if (vte->csi_argv[0] == 18 || vte->csi_argv[0] == 19)
 			csi_report_window_size(vte);
 		else
-			llog_debug(vte, "unhandled CSI t sequence %c", data);
+			llog_debug(vte, "unhandled CSI t sequence %d", vte->csi_argv[0]);
+		break;
+	case 'b': /* Repeat last char */
+		num = vte->csi_argv[0];
+		tsm_screen_repeat_char(vte->con, num);
 		break;
 	default:
 		llog_debug(vte, "unhandled CSI sequence %c", data);
