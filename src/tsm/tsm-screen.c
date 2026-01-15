@@ -1550,6 +1550,36 @@ void tsm_screen_insert_chars(struct tsm_screen *con, unsigned int num)
 		screen_cell_init(con, &cells[con->cursor_x + i]);
 }
 
+void tsm_screen_repeat_char(struct tsm_screen *con, unsigned int num)
+{
+	struct cell *cells;
+	unsigned int max, i;
+
+	if (!con || !num || !con->size_y || !con->size_x)
+		return;
+
+	screen_inc_age(con);
+	/* TODO: more sophisticated ageing */
+	con->age = con->age_cnt;
+
+	if (con->cursor_x >= con->size_x)
+		con->cursor_x = con->size_x - 1;
+	if (con->cursor_y >= con->size_y)
+		con->cursor_y = con->size_y - 1;
+
+	if (!con->cursor_x)
+		return;
+
+	max = con->size_x - con->cursor_x;
+	if (num > max)
+		num = max;
+
+	cells = con->lines[con->cursor_y]->cells;
+	for (i = 0; i < num; i++)
+		cells[con->cursor_x + i] = cells[con->cursor_x - 1];
+	con->cursor_x += num;
+}
+
 SHL_EXPORT
 void tsm_screen_delete_chars(struct tsm_screen *con, unsigned int num)
 {
