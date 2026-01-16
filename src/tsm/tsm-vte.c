@@ -3365,6 +3365,9 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 
 void tsm_vte_paste(struct tsm_vte *vte, const char *data)
 {
+	if (!vte || !data)
+		return;
+
 	if (vte->bracketed_paste) {
 		const char start[] = "\e[200~";
 		const char end[] = "\e[201~";
