@@ -1,5 +1,11 @@
 # libtsm Release News
 
+## CHANGES WITH 4.4.1
+### New features
+* Add support to CSI b sequence (repeat last char) by @kdj0c in https://github.com/kmscon/libtsm/pull/15
+### Bug fixes
+* tsm_vte_paste: check input by @kdj0c in https://github.com/kmscon/libtsm/pull/16
+
 ## CHANGES WITH 4.4.0:
 ### New features
 * Add support for CSI 18t and 19t command
