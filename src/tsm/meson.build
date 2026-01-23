@@ -24,10 +24,12 @@ if not cc.links(code, args: link_flags, name: '-Wl,--version-script=...')
     endif
 endif
 
+deps = [wcwidth_dep, shl_dep, xkbcommon_dep]
+
 libtsm = shared_library(
     'tsm',
     libtsm_srcs,
-    dependencies: [wcwidth_dep, shl_dep, xkbcommon_dep],
+    dependencies: deps,
     install: true,
     version: version,
     soversion: major,
@@ -37,6 +39,7 @@ libtsm = shared_library(
 libtsm_dep = declare_dependency(
     include_directories: '.',
     link_with: libtsm,
+    dependencies: deps,
     sources: libtsm_srcs,
 )
 
