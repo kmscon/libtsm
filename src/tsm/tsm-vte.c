@@ -1811,7 +1811,7 @@ static void csi_report_window_size(struct tsm_vte *vte)
 
 	w = tsm_screen_get_width(vte->con);
 	h = tsm_screen_get_height(vte->con);
-	len = snprintf(buf, sizeof(buf), "\e[%u;%u;%ut", resp,  h + 1, w + 1);
+	len = snprintf(buf, sizeof(buf), "\e[%u;%u;%ut", resp,  h, w);
 	if (len >= sizeof(buf))
 		return;
 	vte_write(vte, buf, len);
