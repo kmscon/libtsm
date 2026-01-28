@@ -771,7 +771,7 @@ int tsm_screen_resize(struct tsm_screen *con, unsigned int x,
 			/* If there is nothing in the scrollback buffer,
 			 * Only scroll up if the cursor would go off-screen */
 			if (con->cursor_y >= y) {
-				diff = y - con->cursor_y + 1;
+				diff = con->cursor_y - y + 1;
 				tsm_screen_scroll_up(con, diff);
 				move_cursor(con, con->cursor_x, y - 1);
 			}
@@ -796,7 +796,6 @@ int tsm_screen_resize(struct tsm_screen *con, unsigned int x,
 			tsm_screen_scroll_down(con, diff);
 			remove_from_sb(con, diff);
 			move_cursor(con, con->cursor_x, con->cursor_y + diff);
-			diff--;
 		}
 	}
 
