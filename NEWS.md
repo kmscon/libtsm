@@ -1,5 +1,16 @@
 # libtsm Release News
 
+## CHANGES WITH 4.4.2
+### New features
+* add nord color scheme by @kdj0c in https://github.com/kmscon/libtsm/pull/21
+* meson: include tsm's deps in libtsm_dep by @1ace in https://github.com/kmscon/libtsm/pull/19
+### Bug Fixes
+* Fix CSI 18t and 19t reporting size. by @kdj0c in https://github.com/kmscon/libtsm/pull/20
+* resize: Fix a corner case when resizing by @kdj0c in https://github.com/kmscon/libtsm/pull/22
+
+## New Contributors
+* @1ace made their first contribution in https://github.com/kmscon/libtsm/pull/19
+
 ## CHANGES WITH 4.4.1
 ### New features
 * Add support to CSI b sequence (repeat last char) by @kdj0c in https://github.com/kmscon/libtsm/pull/15
