@@ -2952,11 +2952,29 @@ bool tsm_vte_handle_keyboard(struct tsm_vte *vte, uint32_t keysym,
 			return true;
 		case XKB_KEY_Page_Up:
 		case XKB_KEY_KP_Page_Up:
-			vte_write(vte, "\e[5~", 4);
+			/* Combinations with ALT are handled as TSM_VTE_FLAG_PREPEND_ESCAPE flag */
+			if ((mods & (TSM_CONTROL_MASK | TSM_SHIFT_MASK)) == (TSM_CONTROL_MASK | TSM_SHIFT_MASK)) {
+				vte_write(vte, "\e[5;6~", 6);
+			} else if (mods & TSM_CONTROL_MASK) {
+				vte_write(vte, "\e[5;5~", 6);
+			} else if (mods & TSM_SHIFT_MASK) {
+				vte_write(vte, "\e[5;2~", 6);
+			} else {
+				vte_write(vte, "\e[5~", 4);
+			}
 			return true;
 		case XKB_KEY_KP_Page_Down:
 		case XKB_KEY_Page_Down:
-			vte_write(vte, "\e[6~", 4);
+			/* Combinations with ALT are handled as TSM_VTE_FLAG_PREPEND_ESCAPE flag */
+			if ((mods & (TSM_CONTROL_MASK | TSM_SHIFT_MASK)) == (TSM_CONTROL_MASK | TSM_SHIFT_MASK)) {
+				vte_write(vte, "\e[6;6~", 6);
+			} else if (mods & TSM_CONTROL_MASK) {
+				vte_write(vte, "\e[6;5~", 6);
+			} else if (mods & TSM_SHIFT_MASK) {
+				vte_write(vte, "\e[6;2~", 6);
+			} else {
+				vte_write(vte, "\e[6~", 4);
+			}
 			return true;
 		case XKB_KEY_Up:
 		case XKB_KEY_KP_Up:
