@@ -993,7 +993,7 @@ void tsm_screen_sb_reset(struct tsm_screen *con)
 	con->age = con->age_cnt;
 
 	con->sb_pos = NULL;
-	con->sb_pos_num = 0;
+	con->sb_pos_num = con->sb_count;
 }
 
 unsigned int tsm_screen_sb_get_line_count(struct tsm_screen *con)
