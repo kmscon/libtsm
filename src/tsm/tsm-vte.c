@@ -1655,6 +1655,7 @@ static void csi_mode(struct tsm_vte *vte, bool set)
 			set_reset_flag(vte, set, TSM_VTE_FLAG_AUTO_REPEAT_MODE);
 			continue;
 		case TSM_VTE_MOUSE_MODE_X10:
+		case TSM_VTE_MOUSE_MODE_VT200:
 			vte->mouse_mode = set ? vte->csi_argv[i] : 0;
 			vte->mouse_event = TSM_VTE_MOUSE_EVENT_BTN;
 
@@ -1747,7 +1748,7 @@ static void csi_mode(struct tsm_vte *vte, bool set)
 			continue;
 		case TSM_VTE_MOUSE_EVENT_BTN:
 		case TSM_VTE_MOUSE_EVENT_ANY:
-			if (vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10) {
+			if (vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10 || vte->mouse_mode == TSM_VTE_MOUSE_MODE_VT200) {
 			    vte->mouse_event = TSM_VTE_MOUSE_EVENT_BTN;
 			} else {
 			    vte->mouse_event = set ? vte->csi_argv[i] : 0;
@@ -3320,7 +3321,7 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 	/* In mode 1002 (BTN), accept MOVED with button pressed (drag, button >= 32) */
 	/* In mode 1003 (ANY), accept all MOVED events */
 	bool is_drag = (button >= 32 && button <= 34);
-	if ((vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10 ||
+	if ((vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10 || vte->mouse_mode == TSM_VTE_MOUSE_MODE_VT200 ||
 	     (vte->mouse_event == TSM_VTE_MOUSE_EVENT_BTN && !is_drag) ||
 	     (vte->mouse_event != TSM_VTE_MOUSE_EVENT_BTN && vte->mouse_event != TSM_VTE_MOUSE_EVENT_ANY)) &&
 	    (event & TSM_MOUSE_EVENT_MOVED)) {
@@ -3342,7 +3343,10 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 		reply_flags = button | modifiers;
 	}
 
-	if (vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10) {
+	if (vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10 || vte->mouse_mode == TSM_VTE_MOUSE_MODE_VT200) {
+		if (vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10 && (event & TSM_MOUSE_EVENT_RELEASED))
+			return false;
+
 		/* + 0x20 to start in the range of visible characters
 		 * and + 1 to start at 1,1 */
 		cell_x += 0x21;
@@ -3361,6 +3365,9 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 			 * released gets lost by design of this encoding scheme */
 			button = 3;
 		}
+
+		if (vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10)
+			modifiers = 0;
 
 		reply_flags = (button | modifiers) + 0x20;
 		snprintf((char*) &buffer, sizeof(buffer), "\e[M%c%c%c", reply_flags, cell_x, cell_y);
