@@ -373,6 +373,7 @@ enum tsm_vte_color {
 
 /* control sequence codes sent be the application */
 #define TSM_VTE_MOUSE_MODE_X10      9 /* legacy mode (only cell mode, only on mouse click and x and y can be 223 max) */
+#define TSM_VTE_MOUSE_MODE_VT200 1000 /* normal tracking mode (sends mouse position both on button press and release) */
 #define TSM_VTE_MOUSE_EVENT_BTN  1002 /* sends position on mouse click only */
 #define TSM_VTE_MOUSE_EVENT_ANY  1003 /* sends position on mouse click and mouse move */
 #define TSM_VTE_MOUSE_MODE_SGR   1006 /* modern mode that allows unlimited x and y coordinates */
