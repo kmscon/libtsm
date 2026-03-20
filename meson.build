@@ -3,7 +3,7 @@
 project(
     'libtsm',
     'c',
-    version: '4.4.2',
+    version: '4.4.3',
     license: 'MIT',
     meson_version: '>=1.1',
     default_options: [

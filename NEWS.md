@@ -1,5 +1,18 @@
 # libtsm Release News
 
+## CHANGES WITH 4.4.3
+### New features
+* Add support for VT200 mouse tracking by @caramelli in https://github.com/kmscon/libtsm/pull/27
+### Bug Fixes
+* Fix Ctrl-PgUp and Ctrl-PgDn combinations by @Karlson2k in https://github.com/kmscon/libtsm/pull/24
+* Fix scrollback reset position in tsm_screen_sb_reset() by @caramelli in https://github.com/kmscon/libtsm/pull/26
+* vte: guard case 'm' (SGR) against CSI_GT prefix by @kdj0c in https://github.com/kmscon/libtsm/pull/29
+* wcwidth: update to upstream v4 by @kdj0c in https://github.com/kmscon/libtsm/pull/28
+
+## New Contributors
+* @Karlson2k made their first contribution in https://github.com/kmscon/libtsm/pull/24
+* @caramelli made their first contribution in https://github.com/kmscon/libtsm/pull/26
+
 ## CHANGES WITH 4.4.2
 ### New features
 * add nord color scheme by @kdj0c in https://github.com/kmscon/libtsm/pull/21
