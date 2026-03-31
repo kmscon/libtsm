@@ -144,6 +144,11 @@ void tsm_screen_selection_start(struct tsm_screen *con,
 	/* TODO: more sophisticated ageing */
 	con->age = con->age_cnt;
 
+	if (posx >= con->size_x)
+		posx = con->size_x - 1;
+	if (posy >= con->size_y)
+		posy = con->size_y - 1;
+
 	con->sel_active = true;
 	selection_set(con, &con->sel_start, posx, posy);
 	memcpy(&con->sel_end, &con->sel_start, sizeof(con->sel_end));
@@ -161,6 +166,11 @@ void tsm_screen_selection_target(struct tsm_screen *con,
 	/* TODO: more sophisticated ageing */
 	con->age = con->age_cnt;
 
+	if (posx >= con->size_x)
+		posx = con->size_x - 1;
+	if (posy >= con->size_y)
+		posy = con->size_y - 1;
+
 	selection_set(con, &con->sel_end, posx, posy);
 }
 
@@ -175,6 +185,11 @@ void tsm_screen_selection_word(struct tsm_screen *con,
 	screen_inc_age(con);
 	/* TODO: more sophisticated ageing */
 	con->age = con->age_cnt;
+
+	if (posx >= con->size_x)
+		posx = con->size_x - 1;
+	if (posy >= con->size_y)
+		posy = con->size_y - 1;
 
 	word_select(con, posx, posy);
 }
