@@ -142,3 +142,9 @@ LIBTSM_4_4 {
 global:
 	tsm_vte_paste;
 } LIBTSM_4_3;
+
+LIBTSM_4_5 {
+global:
+	tsm_vte_set_bell_cb;
+	tsm_vte_set_led_cb;
+} LIBTSM_4_4;
