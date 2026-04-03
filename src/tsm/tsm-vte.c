@@ -181,6 +181,10 @@ struct tsm_vte {
 	tsm_vte_bell_cb bell_cb;
 	void *bell_data;
 
+	tsm_vte_led_cb led_cb;
+	void *led_data;
+	unsigned int led_state;
+
 	uint8_t (*custom_palette_storage)[3];
 	uint8_t (*palette)[3];
 	struct tsm_screen_attr def_attr;
@@ -587,6 +591,16 @@ void tsm_vte_set_bell_cb(struct tsm_vte *vte, tsm_vte_bell_cb bell_cb, void *bel
 
 	vte->bell_cb = bell_cb;
 	vte->bell_data = bell_data;
+}
+
+SHL_EXPORT
+void tsm_vte_set_led_cb(struct tsm_vte *vte, tsm_vte_led_cb led_cb, void *led_data)
+{
+	if (!vte)
+		return;
+
+	vte->led_cb = led_cb;
+	vte->led_data = led_data;
 }
 
 static int vte_update_palette(struct tsm_vte *vte)
@@ -2109,6 +2123,22 @@ static void do_csi(struct tsm_vte *vte, uint32_t data)
 	case 'b': /* Repeat last char */
 		num = vte->csi_argv[0];
 		tsm_screen_repeat_char(vte->con, num);
+		break;
+	case 'q': /* DECLL - Load LEDs */
+		num = vte->csi_argv[0];
+		if (num <= 0) {
+			vte->led_state = 0;
+		} else if (num == 1) {
+			vte->led_state |= TSM_VTE_LED_SCROLL_LOCK;
+		} else if (num == 2) {
+			vte->led_state |= TSM_VTE_LED_NUM_LOCK;
+		} else if (num == 3) {
+			vte->led_state |= TSM_VTE_LED_CAPS_LOCK;
+		} else {
+			break;
+		}
+		if (vte->led_cb)
+			vte->led_cb(vte, vte->led_state, vte->led_data);
 		break;
 	default:
 		llog_debug(vte, "unhandled CSI sequence %c", data);

@@ -567,11 +567,111 @@ TEST_DEFINE_CASE(bell)
 	TEST(test_vte_bell_data)
 TEST_END_CASE
 
+static unsigned int led_cb_leds = 0;
+static bool led_cb_called = false;
+
+static void led_cb(struct tsm_vte *vte, unsigned int leds, void *data)
+{
+	unsigned int *out = data;
+	ck_assert_ptr_ne(vte, NULL);
+	if (out)
+		*out = leds;
+	led_cb_leds = leds;
+	led_cb_called = true;
+}
+
+START_TEST(test_vte_led_decll)
+{
+	struct tsm_screen *screen;
+	struct tsm_vte *vte;
+	int r;
+
+	r = tsm_screen_new(&screen, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	r = tsm_vte_new(&vte, screen, write_cb, NULL, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	tsm_vte_set_led_cb(vte, led_cb, NULL);
+
+	/* CSI 1 q  — turn on Scroll Lock LED */
+	led_cb_called = false;
+	tsm_vte_input(vte, "\033[1q", 4);
+	ck_assert(led_cb_called);
+	ck_assert_uint_eq(led_cb_leds, TSM_VTE_LED_SCROLL_LOCK);
+
+	/* CSI 3 q  — turn on Caps Lock LED (cumulative) */
+	led_cb_called = false;
+	tsm_vte_input(vte, "\033[3q", 4);
+	ck_assert(led_cb_called);
+	ck_assert_uint_eq(led_cb_leds, TSM_VTE_LED_SCROLL_LOCK | TSM_VTE_LED_CAPS_LOCK);
+
+	/* CSI 0 q  — clear all LEDs */
+	led_cb_called = false;
+	tsm_vte_input(vte, "\033[0q", 4);
+	ck_assert(led_cb_called);
+	ck_assert_uint_eq(led_cb_leds, 0);
+
+	tsm_vte_unref(vte);
+	tsm_screen_unref(screen);
+}
+END_TEST
+
+START_TEST(test_vte_led_no_cb)
+{
+	struct tsm_screen *screen;
+	struct tsm_vte *vte;
+	int r;
+
+	r = tsm_screen_new(&screen, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	r = tsm_vte_new(&vte, screen, write_cb, NULL, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	/* DECLL without a registered callback must not crash */
+	tsm_vte_input(vte, "\033[1q", 4);
+
+	tsm_vte_unref(vte);
+	tsm_screen_unref(screen);
+}
+END_TEST
+
+START_TEST(test_vte_led_data)
+{
+	struct tsm_screen *screen;
+	struct tsm_vte *vte;
+	unsigned int out = 0;
+	int r;
+
+	r = tsm_screen_new(&screen, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	r = tsm_vte_new(&vte, screen, write_cb, NULL, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	tsm_vte_set_led_cb(vte, led_cb, &out);
+
+	tsm_vte_input(vte, "\033[2q", 4);
+	ck_assert_uint_eq(out, TSM_VTE_LED_NUM_LOCK);
+
+	tsm_vte_unref(vte);
+	tsm_screen_unref(screen);
+}
+END_TEST
+
+TEST_DEFINE_CASE(led)
+	TEST(test_vte_led_decll)
+	TEST(test_vte_led_no_cb)
+	TEST(test_vte_led_data)
+TEST_END_CASE
+
 // clang-format off
 TEST_DEFINE(
 	TEST_SUITE(vte,
 		TEST_CASE(misc),
 		TEST_CASE(bell),
+		TEST_CASE(led),
 		TEST_END
 	)
 )

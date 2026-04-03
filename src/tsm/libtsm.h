@@ -421,6 +421,16 @@ typedef void (*tsm_vte_mouse_cb) (struct tsm_vte *vte,
 typedef void (*tsm_vte_bell_cb) (struct tsm_vte *vte,
 				 void *data);
 
+enum tsm_vte_led {
+	TSM_VTE_LED_SCROLL_LOCK = (1 << 0),
+	TSM_VTE_LED_NUM_LOCK    = (1 << 1),
+	TSM_VTE_LED_CAPS_LOCK   = (1 << 2),
+};
+
+typedef void (*tsm_vte_led_cb) (struct tsm_vte *vte,
+				unsigned int leds,
+				void *data);
+
 int tsm_vte_new(struct tsm_vte **out, struct tsm_screen *con,
 		tsm_vte_write_cb write_cb, void *data,
 		tsm_log_t log, void *log_data);
@@ -430,6 +440,7 @@ void tsm_vte_unref(struct tsm_vte *vte);
 void tsm_vte_set_osc_cb(struct tsm_vte *vte, tsm_vte_osc_cb osc_cb, void *osc_data);
 void tsm_vte_set_mouse_cb(struct tsm_vte *vte, tsm_vte_mouse_cb mouse_cb, void *mouse_data);
 void tsm_vte_set_bell_cb(struct tsm_vte *vte, tsm_vte_bell_cb bell_cb, void *bell_data);
+void tsm_vte_set_led_cb(struct tsm_vte *vte, tsm_vte_led_cb led_cb, void *led_data);
 
 /**
  * @brief Set color palette to one of the predefined palette on the vte object.
