@@ -458,6 +458,97 @@ START_TEST(test_vte_csi_cursor_up_down)
 }
 END_TEST
 
+static bool bell_cb_called = false;
+
+static void bell_cb(struct tsm_vte *vte, void *data)
+{
+	bool *flag = data;
+	ck_assert_ptr_ne(vte, NULL);
+	if (flag)
+		*flag = true;
+	bell_cb_called = true;
+}
+
+START_TEST(test_vte_bell)
+{
+	struct tsm_screen *screen;
+	struct tsm_vte *vte;
+	int r;
+
+	r = tsm_screen_new(&screen, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	r = tsm_vte_new(&vte, screen, write_cb, NULL, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	tsm_vte_set_bell_cb(vte, bell_cb, NULL);
+
+	bell_cb_called = false;
+	tsm_vte_input(vte, "\x07", 1);
+	ck_assert(bell_cb_called);
+
+	/* BEL inside an OSC sequence acts as the ST terminator, not as a bell */
+	bell_cb_called = false;
+	tsm_vte_input(vte, "\033]0;title\x07", 10);
+	ck_assert(!bell_cb_called);
+
+	tsm_vte_unref(vte);
+	vte = NULL;
+
+	tsm_screen_unref(screen);
+	screen = NULL;
+}
+END_TEST
+
+START_TEST(test_vte_bell_no_cb)
+{
+	struct tsm_screen *screen;
+	struct tsm_vte *vte;
+	int r;
+
+	r = tsm_screen_new(&screen, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	r = tsm_vte_new(&vte, screen, write_cb, NULL, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	/* BEL without a registered callback must not crash */
+	tsm_vte_input(vte, "\x07", 1);
+
+	tsm_vte_unref(vte);
+	vte = NULL;
+
+	tsm_screen_unref(screen);
+	screen = NULL;
+}
+END_TEST
+
+START_TEST(test_vte_bell_data)
+{
+	struct tsm_screen *screen;
+	struct tsm_vte *vte;
+	bool flag = false;
+	int r;
+
+	r = tsm_screen_new(&screen, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	r = tsm_vte_new(&vte, screen, write_cb, NULL, log_cb, NULL);
+	ck_assert_int_eq(r, 0);
+
+	tsm_vte_set_bell_cb(vte, bell_cb, &flag);
+
+	tsm_vte_input(vte, "\x07", 1);
+	ck_assert(flag);
+
+	tsm_vte_unref(vte);
+	vte = NULL;
+
+	tsm_screen_unref(screen);
+	screen = NULL;
+}
+END_TEST
+
 TEST_DEFINE_CASE(misc)
 	TEST(test_vte_init)
 	TEST(test_vte_null)
@@ -470,10 +561,17 @@ TEST_DEFINE_CASE(misc)
 	TEST(test_vte_csi_cursor_up_down)
 TEST_END_CASE
 
+TEST_DEFINE_CASE(bell)
+	TEST(test_vte_bell)
+	TEST(test_vte_bell_no_cb)
+	TEST(test_vte_bell_data)
+TEST_END_CASE
+
 // clang-format off
 TEST_DEFINE(
 	TEST_SUITE(vte,
 		TEST_CASE(misc),
+		TEST_CASE(bell),
 		TEST_END
 	)
 )

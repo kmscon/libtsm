@@ -178,6 +178,9 @@ struct tsm_vte {
 	unsigned int mouse_last_row;
 	bool bracketed_paste;
 
+	tsm_vte_bell_cb bell_cb;
+	void *bell_data;
+
 	uint8_t (*custom_palette_storage)[3];
 	uint8_t (*palette)[3];
 	struct tsm_screen_attr def_attr;
@@ -576,6 +579,16 @@ void tsm_vte_set_mouse_cb(struct tsm_vte *vte, tsm_vte_mouse_cb mouse_cb, void *
 	vte->mouse_data = mouse_data;
 }
 
+SHL_EXPORT
+void tsm_vte_set_bell_cb(struct tsm_vte *vte, tsm_vte_bell_cb bell_cb, void *bell_data)
+{
+	if (!vte)
+		return;
+
+	vte->bell_cb = bell_cb;
+	vte->bell_data = bell_data;
+}
+
 static int vte_update_palette(struct tsm_vte *vte)
 {
 	vte->palette = get_palette(vte);
@@ -880,11 +893,8 @@ static void do_execute(struct tsm_vte *vte, uint32_t ctrl)
 		vte_write(vte, "\x06", 1);
 		break;
 	case 0x07: /* BEL */
-		/* Sound bell tone */
-		/* TODO: I always considered this annying, however, we
-		 * should at least provide some way to enable it if the
-		 * user *really* wants it.
-		 */
+		if (vte->bell_cb)
+			vte->bell_cb(vte, vte->bell_data);
 		break;
 	case 0x08: /* BS */
 		/* Move cursor one position left */
