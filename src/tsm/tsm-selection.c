@@ -58,27 +58,30 @@
 #include "libtsm.h"
 #include "libtsm-int.h"
 #include "shl-llog.h"
+#include "shl_dlist.h"
 
 #define LLOG_SUBSYSTEM "tsm-selection"
 
 static void selection_set(struct tsm_screen *con, struct selection_pos *sel,
 			  unsigned int x, unsigned int y)
 {
-	struct line *pos;
-
-	sel->line = NULL;
-	pos = con->sb_pos;
-
-	while (y && pos) {
-		--y;
-		pos = pos->next;
-	}
-
-	if (pos)
-		sel->line = pos;
+	struct line *line;
 
 	sel->x = x;
-	sel->y = y;
+
+	if (!con->sb.pos) {
+		sel->line = con->lines[y];
+		return;
+	}
+	if (con->sb.pos_num + y >= con->sb.count) {
+		y -= con->sb.count - con->sb.pos_num;
+		sel->line = con->lines[y];
+		return;
+	}
+	line = con->sb.pos;
+	while (y--)
+		line = shl_dlist_next(line, &con->sb.list, list);
+	sel->line = line;
 }
 
 static void word_select(struct tsm_screen *con,
@@ -90,10 +93,7 @@ static void word_select(struct tsm_screen *con,
 
 	selection_set(con, &con->sel_start, posx, posy);
 
-	if (con->sel_start.line)
-		line = con->sel_start.line;
-	else
-	 	line = con->lines[con->sel_start.y];
+	line = con->sel_start.line;
 
 	if (!line || line->cells[posx].ch == ' ')
 		return;
@@ -115,7 +115,8 @@ static void word_select(struct tsm_screen *con,
 		}
 	}
 	con->sel_start.x = start;
-	selection_set(con, &con->sel_end, end, posy);
+	con->sel_end.x = end;
+	con->sel_end.line = line;
 	con->sel_active = true;
 }
 
@@ -130,53 +131,8 @@ void tsm_screen_selection_reset(struct tsm_screen *con)
 	con->age = con->age_cnt;
 
 	con->sel_active = false;
-}
-
-SHL_EXPORT
-void tsm_screen_selection_start(struct tsm_screen *con,
-				unsigned int posx,
-				unsigned int posy)
-{
-	if (!con)
-		return;
-
-	screen_inc_age(con);
-	/* TODO: more sophisticated ageing */
-	con->age = con->age_cnt;
-
-	con->sel_active = true;
-	selection_set(con, &con->sel_start, posx, posy);
-	memcpy(&con->sel_end, &con->sel_start, sizeof(con->sel_end));
-}
-
-SHL_EXPORT
-void tsm_screen_selection_target(struct tsm_screen *con,
-				 unsigned int posx,
-				 unsigned int posy)
-{
-	if (!con || !con->sel_active)
-		return;
-
-	screen_inc_age(con);
-	/* TODO: more sophisticated ageing */
-	con->age = con->age_cnt;
-
-	selection_set(con, &con->sel_end, posx, posy);
-}
-
-SHL_EXPORT
-void tsm_screen_selection_word(struct tsm_screen *con,
-			       unsigned int posx,
-			       unsigned int posy)
-{
-	if (!con)
-		return;
-
-	screen_inc_age(con);
-	/* TODO: more sophisticated ageing */
-	con->age = con->age_cnt;
-
-	word_select(con, posx, posy);
+	con->sel_start.line = NULL;
+	con->sel_end.line = NULL;
 }
 
 /* calculates the line length from the beginning to the last non zero character */
@@ -227,13 +183,13 @@ static unsigned int copy_line(struct line *line, char *buf,
 	return pos - buf;
 }
 
-static void swap_selections(struct selection_pos **a, struct selection_pos **b)
+static void swap_selections(struct tsm_screen *con)
 {
-	struct selection_pos *c;
+	struct selection_pos c;
 
-	c  = *a;
-	*a = *b;
-	*b = c;
+	c = con->sel_start;
+	con->sel_start = con->sel_end;
+	con->sel_end = c;
 }
 
 /*
@@ -241,64 +197,90 @@ static void swap_selections(struct selection_pos **a, struct selection_pos **b)
  *
  * Start must always point to the top left and end to the bottom right cell
  */
-static void norm_selection(struct tsm_screen *con, struct selection_pos **start, struct selection_pos **end)
+static void norm_selection(struct tsm_screen *con)
 {
-	struct line *iter;
+	int i;
+	struct selection_pos *start, *end;
 
-	if ((*end)->line == NULL && (*end)->y == SELECTION_TOP) {
-		swap_selections(start, end);
+	start = &con->sel_start;
+	end = &con->sel_end;
 
+	if (start->line == end->line) {
+		if (con->sel_start.x > con->sel_end.x)
+			swap_selections(con);
 		return;
 	}
 
-	if ((*start)->line && (*end)->line) {
-		/* single line selection */
-		if ((*start)->line == (*end)->line) {
-			if ((*start)->x > (*end)->x) {
-				swap_selections(start, end);
-			}
+	if (is_in_scrollback(&con->sel_start) != is_in_scrollback(&con->sel_end)) {
+		if (is_in_scrollback(&con->sel_end))
+			swap_selections(con);
+		return;
+	}
 
+	if (is_in_scrollback(&con->sel_start) && is_in_scrollback(&con->sel_end)) {
+		if (con->sel_start.line->sb_id > con->sel_end.line->sb_id)
+			swap_selections(con);
+		return;
+	}
+
+	/* so both are not in scroll back buffer and can't be equal */
+	for (i = 0; i < con->size_y; i++) {
+		if (con->lines[i] == con->sel_end.line) {
+			swap_selections(con);
 			return;
 		}
+		if (con->lines[i] == con->sel_start.line)
+			return;
+	}
+}
 
-		/*
-		 * multi line selection
-		 *
-		 * search from end->line to con->sb_last
-		 * if we find start->line on the way we
-		 * need to change start and end
-		*/
-		iter = (*end)->line;
-		while (iter && iter != con->sb_last) {
-			if (iter == (*start)->line) {
-				swap_selections(start, end);
-			}
-
-			iter = iter->next;
-		}
-
+SHL_EXPORT
+void tsm_screen_selection_start(struct tsm_screen *con,
+				unsigned int posx,
+				unsigned int posy)
+{
+	if (!con)
 		return;
-	}
 
-	/* end is in scroll back buffer and start on screen */
-	if (!(*start)->line && (*end)->line) {
-		swap_selections(start, end);
+	screen_inc_age(con);
+	/* TODO: more sophisticated ageing */
+	con->age = con->age_cnt;
+
+	con->sel_active = true;
+	selection_set(con, &con->sel_start, posx, posy);
+	memcpy(&con->sel_end, &con->sel_start, sizeof(con->sel_end));
+}
+
+SHL_EXPORT
+void tsm_screen_selection_target(struct tsm_screen *con,
+				 unsigned int posx,
+				 unsigned int posy)
+{
+	if (!con || !con->sel_active)
 		return;
-	}
 
-	/* reorder one-line selection if selection was created right to left */
-	if ((*start)->y == (*end)->y) {
-		if ((*start)->x > (*end)->x) {
-			swap_selections(start, end);
-		}
+	screen_inc_age(con);
+	/* TODO: more sophisticated ageing */
+	con->age = con->age_cnt;
 
+	selection_set(con, &con->sel_end, posx, posy);
+	/* always normalize the selection */
+	norm_selection(con);
+}
+
+SHL_EXPORT
+void tsm_screen_selection_word(struct tsm_screen *con,
+			       unsigned int posx,
+			       unsigned int posy)
+{
+	if (!con)
 		return;
-	}
 
-	/* reorder multi-line selection if selection was created bottom to top */
-	if ((*start)->y > (*end)->y) {
-		swap_selections(start, end);
-	}
+	screen_inc_age(con);
+	/* TODO: more sophisticated ageing */
+	con->age = con->age_cnt;
+
+	word_select(con, posx, posy);
 }
 
 /*
@@ -308,25 +290,17 @@ static void norm_selection(struct tsm_screen *con, struct selection_pos **start,
  */
 static int selection_count_lines_sb(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end)
 {
+	int count = 1;
 	struct line *iter;
-	int count = 0;
 
-	/* Single line selection */
-	if (start->line && (start->line == end->line)) {
-		return 1;
-	}
+	if (!is_in_scrollback(start))
+		return 0;
 
 	iter = start->line;
-	while (iter) {
+	while (iter && iter != end->line) {
 		count++;
-
-		if (iter == con->sb_last) {
-			break;
-		}
-
-		iter = iter->next;
+		iter = shl_dlist_next(iter, &con->sb.list, list);
 	}
-
 	return count;
 }
 
@@ -335,20 +309,34 @@ static int selection_count_lines_sb(struct tsm_screen *con, struct selection_pos
  *
  * Does not count the lines selected in the scroll back buffer
  */
-static int selection_count_lines(struct selection_pos *start, struct selection_pos *end)
+static int selection_count_lines(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end)
 {
-	/* Selection only spans lines of the scroll back buffer */
-	if (start->line && end->line) {
-		return 0;
-	}
+	bool in_sel;
+	int i, count = 0;
 
-	return end->y - start->y + 1;
+	/* Selection only spans lines of the scroll back buffer */
+	if (is_in_scrollback(end))
+		return 0;
+	if (is_in_scrollback(start))
+		in_sel = true;
+
+	for (i = 0; i < con->size_y; i++) {
+		if (start->line == con->lines[i])
+			in_sel = true;
+
+		if (in_sel)
+			count++;
+		if (end->line == con->lines[i])
+			return count;
+	}
+	llog_error(con, "selection_count_lines: end->line not found");
+	return count;
 }
 
 /*
  * Calculate the number of selected cells in a line
  */
-static int calc_selection_line_len_sb(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end, struct line *line)
+static int calc_selection_line_len(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end, struct line *line)
 {
 	/* one-line selection */
 	if (start->line == end->line) {
@@ -370,32 +358,6 @@ static int calc_selection_line_len_sb(struct tsm_screen *con, struct selection_p
 }
 
 /*
- * Calculate the number of selected cells in a line
- */
-static int calc_selection_line_len(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end, int line_num)
-{
-	if (!start->line) {
-		/* one-line selection */
-		if (start->y == end->y) {
-			return end->x - start->x + 1;
-		}
-
-		/* first line of a multi-line selection */
-		if (line_num == start->y) {
-			return con->size_x - start->x;
-		}
-	}
-
-	/* last line of a multi-line selection */
-	if (line_num == end->y) {
-		return end->x + 1;
-	}
-
-	/* every other selection */
-	return con->size_x;
-}
-
-/*
  * Calculate the maximum needed space for the number of lines given
  */
 static unsigned int calc_line_copy_buffer(struct tsm_screen *con, unsigned int num_lines)
@@ -409,30 +371,22 @@ static unsigned int calc_line_copy_buffer(struct tsm_screen *con, unsigned int n
  */
 static int copy_lines_sb(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end, char *buf, int pos)
 {
-	struct line *iter;
+	struct line *iter; 
 	int line_x, line_len;
 
-	if (!start->line) {
+	if (!is_in_scrollback(start))
 		return pos;
-	}
 
 	iter = start->line;
+	line_x = start->x;
 	while (iter) {
-		line_x = 0;
-		if (iter == start->line) {
-			line_x = start->x;
-		}
-
-		line_len = calc_selection_line_len_sb(con, start, end, iter);
+		line_len = calc_selection_line_len(con, start, end, iter);
 		pos += copy_line(iter, &(buf[pos]), line_x, line_len);
-
-		if (iter == con->sb_last || iter == end->line) {
+		line_x = 0;
+		if (iter == end->line)
 			break;
-		}
-
-		iter = iter->next;
+		iter = shl_dlist_next(iter, &con->sb.list, list);
 	}
-
 	return pos;
 }
 
@@ -441,32 +395,36 @@ static int copy_lines_sb(struct tsm_screen *con, struct selection_pos *start, st
  */
 static int copy_lines(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end, char *buf, int pos)
 {
-	int line_len, line_x, i;
+	int line_len, i;
+	int line_x = 0;
+	bool in_sel;
 
-	/* selection is scroll back buffer only */
-	if (end->line) {
+	if (is_in_scrollback(end))
 		return pos;
-	}
 
-	for (i = start->y; i <= end->y; i++) {
-		line_len = calc_selection_line_len(con, start, end, i);
+	in_sel = is_in_scrollback(start);
 
-		line_x = 0;
-		if (!start->line && i == start->y) {
+	for (i = 0; i < con->size_y; i++) {
+		if (start->line == con->lines[i]) {
+			in_sel = true;
 			line_x = start->x;
 		}
-
-		pos += copy_line(con->lines[i], &(buf[pos]), line_x, line_len);
+		if (in_sel) {
+			line_len = calc_selection_line_len(con, start, end, con->lines[i]);
+			pos += copy_line(con->lines[i], &(buf[pos]), line_x, line_len);
+			line_x = 0;
+		}
+		if (end->line == con->lines[i])
+			break;
 	}
-
 	return pos;
 }
 
 SHL_EXPORT
 int tsm_screen_selection_copy(struct tsm_screen *con, char **out)
 {
-	struct selection_pos *start, *end;
-	struct selection_pos start_copy, end_copy;
+	struct selection_pos *start = &con->sel_start;
+	struct selection_pos *end = &con->sel_end;
 	int buf_size = 0;
 	int pos = 0;
 	int total_lines;
@@ -479,36 +437,22 @@ int tsm_screen_selection_copy(struct tsm_screen *con, char **out)
 		return -ENOENT;
 	}
 
-	/*
-	 * copy the selection start and end so we can modify it without affecting
-	 * the screen in any way
-	 */
-	memcpy(&start_copy, &con->sel_start, sizeof(con->sel_start));
-	memcpy(&end_copy, &con->sel_end, sizeof(con->sel_end));
-	start = &start_copy;
-	end   = &end_copy;
-
 	/* invalid selection */
-	if (start->y == SELECTION_TOP && start->line == NULL &&
-		end->y == SELECTION_TOP && end->line == NULL) {
+	if (start->line == NULL && end->line == NULL) {
 		*out = strdup("");
 		return 0;
 	}
 
-	norm_selection(con, &start, &end);
-
-	if (start->line == NULL && start->y == SELECTION_TOP) {
-		if (con->sb_first != NULL) {
-			start->line = con->sb_first;
-			start->x = 0;
-		} else {
-			start->y = 0;
-			start->x = 0;
-		}
+	if (start->line == NULL) {
+		if (!shl_dlist_empty(&con->sb.list))
+			start->line = shl_dlist_first(&con->sb.list, struct line, list);
+		else
+			start->line = con->lines[0];
+		start->x = 0;
 	}
 
 	total_lines =  selection_count_lines_sb(con, start, end);
-	total_lines += selection_count_lines(start, end);
+	total_lines += selection_count_lines(con,start, end);
 	buf_size = calc_line_copy_buffer(con, total_lines);
 
 	*out = calloc(buf_size, 1);

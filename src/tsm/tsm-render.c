@@ -38,6 +38,7 @@
 #include "libtsm.h"
 #include "libtsm-int.h"
 #include "shl-llog.h"
+#include "shl_dlist.h"
 
 #define LLOG_SUBSYSTEM "tsm-render"
 
@@ -47,7 +48,7 @@ tsm_age_t tsm_screen_draw(struct tsm_screen *con, tsm_screen_draw_cb draw_cb,
 {
 	unsigned int cur_x, cur_y;
 	unsigned int i, j, k;
-	struct line *iter, *line = NULL;
+	struct line *line, *next_line = NULL;
 	struct cell *cell, empty;
 	struct tsm_screen_attr attr;
 	int ret, warned = 0;
@@ -71,47 +72,41 @@ tsm_age_t tsm_screen_draw(struct tsm_screen *con, tsm_screen_draw_cb draw_cb,
 		cur_y = con->size_y - 1;
 
 	/* push each character into rendering pipeline */
-
-	iter = con->sb_pos;
 	k = 0;
+	next_line = con->sb.pos;
 
 	if (con->sel_active) {
-		if (!con->sel_start.line && con->sel_start.y == SELECTION_TOP)
+		if (!con->sel_start.line)
 			in_sel = !in_sel;
-		if (!con->sel_end.line && con->sel_end.y == SELECTION_TOP)
+		if (!con->sel_end.line)
 			in_sel = !in_sel;
 
-		if (con->sel_start.line &&
-		    (!iter || con->sel_start.line->sb_id < iter->sb_id))
+		if (is_in_scrollback(&con->sel_start) &&
+		    (!con->sb.pos || con->sel_start.line->sb_id < con->sb.pos->sb_id))
 			in_sel = !in_sel;
-		if (con->sel_end.line &&
-		    (!iter || con->sel_end.line->sb_id < iter->sb_id))
+		if (is_in_scrollback(&con->sel_end) &&
+		    (!con->sb.pos || con->sel_end.line->sb_id < con->sb.pos->sb_id))
 			in_sel = !in_sel;
 	}
 
 	for (i = 0; i < con->size_y; ++i) {
-		if (iter) {
-			line = iter;
-			iter = iter->next;
+		if (next_line) {
+			line = next_line;
+			next_line = shl_dlist_next(next_line, &con->sb.list, list);
 		} else {
 			line = con->lines[k];
 			k++;
 		}
 
 		if (con->sel_active) {
-			if (con->sel_start.line == line ||
-			    (!con->sel_start.line &&
-			     con->sel_start.y == k - 1))
+			if (con->sel_start.line == line)
 				sel_start = true;
 			else
 				sel_start = false;
-			if (con->sel_end.line == line ||
-			    (!con->sel_end.line &&
-			     con->sel_end.y == k - 1))
+			if (con->sel_end.line == line)
 				sel_end = true;
 			else
 				sel_end = false;
-
 			was_sel = false;
 		}
 
