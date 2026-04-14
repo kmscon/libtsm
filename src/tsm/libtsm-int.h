@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "libtsm.h"
+#include "shl_dlist.h"
 #include "shl-llog.h"
 
 #define SHL_EXPORT __attribute__((visibility("default")))
@@ -87,20 +88,26 @@ struct cell {
 };
 
 struct line {
-	struct line *next;		/* next line (NULL if not sb) */
-	struct line *prev;		/* prev line (NULL if not sb) */
-
+	struct shl_dlist list;		/* list node, next/prev are NULL if not in sb */
 	unsigned int size;		/* real width */
 	struct cell *cells;		/* actuall cells */
-	uint64_t sb_id;			/* sb ID */
+	uint64_t sb_id;			/* sb ID, 0 if not in sb */
 	tsm_age_t age;			/* age of the whole line */
 };
 
-#define SELECTION_TOP -1
 struct selection_pos {
-	struct line *line;
-	unsigned int x;
-	int y;
+	unsigned int x;			/* x offset from the start of the line */
+	struct line *line;		/* line the selection is on */
+};
+
+struct tsm_scrollback {
+	/* scroll-back buffer */
+	unsigned int count;		/* number of lines in sb */
+	struct shl_dlist list;	/* list of lines in sb */
+	unsigned int max;		/* max-limit of lines in sb */
+	struct line *pos;		/* current position in sb or NULL */
+	unsigned int pos_num;	/* current numeric position in sb */
+	uint64_t last_id;		/* last id given to sb-line */
 };
 
 struct tsm_screen {
@@ -134,14 +141,7 @@ struct tsm_screen {
 	struct line **alt_lines;	/* real alternative lines */
 	tsm_age_t age;			/* whole screen age */
 
-	/* scroll-back buffer */
-	unsigned int sb_count;		/* number of lines in sb */
-	struct line *sb_first;		/* first line; was moved first */
-	struct line *sb_last;		/* last line; was moved last*/
-	unsigned int sb_max;		/* max-limit of lines in sb */
-	struct line *sb_pos;		/* current position in sb or NULL */
-	unsigned int sb_pos_num;	/* current numeric position in sb */
-	uint64_t sb_last_id;		/* last id given to sb-line */
+	struct tsm_scrollback sb;
 
 	/* cursor: positions are always in-bound, but cursor_x might be
 	 * bigger than size_x if new-line is pending */
@@ -170,6 +170,10 @@ static inline void screen_inc_age(struct tsm_screen *con)
 		con->age_reset = 1;
 		++con->age_cnt;
 	}
+}
+
+static inline bool is_in_scrollback(struct selection_pos *sel) {
+	return (sel->line && sel->line->sb_id);
 }
 
 /* available character sets */

@@ -203,9 +203,7 @@ START_TEST(test_screen_copy_line_scrolled)
 	tsm_screen_selection_target(screen, 14, 39);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 39);
 	ck_assert_int_eq(screen->sel_end.x, 14);
-	ck_assert_int_eq(screen->sel_end.y, 39);
 
 	/* force the selected text to scroll up */
 	tsm_screen_newline(screen);
@@ -217,9 +215,7 @@ START_TEST(test_screen_copy_line_scrolled)
 	tsm_screen_newline(screen);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 32);
 	ck_assert_int_eq(screen->sel_end.x, 14);
-	ck_assert_int_eq(screen->sel_end.y, 32);
 
 	r = tsm_screen_selection_copy(screen, &str);
 	ck_assert_ptr_ne(NULL, str);
@@ -321,9 +317,7 @@ START_TEST(test_screen_copy_lines_scrolled)
 	tsm_screen_selection_target(screen, 5, 39);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 37);
 	ck_assert_int_eq(screen->sel_end.x, 5);
-	ck_assert_int_eq(screen->sel_end.y, 39);
 
 	/* force the selected text to scroll up */
 	tsm_screen_newline(screen);
@@ -335,9 +329,7 @@ START_TEST(test_screen_copy_lines_scrolled)
 	tsm_screen_newline(screen);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 30);
 	ck_assert_int_eq(screen->sel_end.x, 5);
-	ck_assert_int_eq(screen->sel_end.y, 32);
 
 	r = tsm_screen_selection_copy(screen, &str);
 	ck_assert_ptr_ne(NULL, str);
@@ -462,9 +454,7 @@ START_TEST(test_screen_copy_line_sb_scrolled)
 	tsm_screen_selection_target(screen, 14, 0);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 0);
 	ck_assert_int_eq(screen->sel_end.x, 14);
-	ck_assert_int_eq(screen->sel_end.y, 0);
 
 	/* force the selected text to scroll up */
 	for (int i = 0; i < 40; i++) {
@@ -472,10 +462,8 @@ START_TEST(test_screen_copy_line_sb_scrolled)
 	}
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, -1);
 	ck_assert_ptr_ne(screen->sel_start.line, NULL);
 	ck_assert_int_eq(screen->sel_end.x, 14);
-	ck_assert_int_eq(screen->sel_end.y, -1);
 	ck_assert_ptr_ne(screen->sel_end.line, NULL);
 
 	r = tsm_screen_selection_copy(screen, &str);
@@ -496,10 +484,8 @@ START_TEST(test_screen_copy_line_sb_scrolled)
 	tsm_screen_selection_target(screen, 14, 0);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 0);
 	ck_assert_ptr_ne(screen->sel_start.line, NULL);
 	ck_assert_int_eq(screen->sel_end.x, 14);
-	ck_assert_int_eq(screen->sel_end.y, 0);
 	ck_assert_ptr_ne(screen->sel_end.line, NULL);
 
 	tsm_screen_newline(screen);
@@ -507,10 +493,8 @@ START_TEST(test_screen_copy_line_sb_scrolled)
 	tsm_screen_newline(screen);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 0);
 	ck_assert_ptr_ne(screen->sel_start.line, NULL);
 	ck_assert_int_eq(screen->sel_end.x, 14);
-	ck_assert_int_eq(screen->sel_end.y, 0);
 	ck_assert_ptr_ne(screen->sel_end.line, NULL);
 
 	r = tsm_screen_selection_copy(screen, &str);
@@ -549,26 +533,16 @@ START_TEST(test_screen_copy_line_sb_scrolled_invalid)
 	tsm_screen_selection_target(screen, 14, 0);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 0);
 	ck_assert_int_eq(screen->sel_end.x, 14);
-	ck_assert_int_eq(screen->sel_end.y, 0);
 
 	/* force the selected text to scroll up */
 	for (i = 0; i < 40; i++) {
 		tsm_screen_newline(screen);
 	}
 
-	/*
-	 * sel_start.y == -1, sel_start.line == NULL
-	 * sel_end.y == -1, sel_end.line == NULL
-	 *
-	 * => Invalid selection
-	 */
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, -1);
 	ck_assert_ptr_eq(screen->sel_start.line, NULL);
 	ck_assert_int_eq(screen->sel_end.x, 14);
-	ck_assert_int_eq(screen->sel_end.y, -1);
 	ck_assert_ptr_eq(screen->sel_end.line, NULL);
 
 	r = tsm_screen_selection_copy(screen, &str);
@@ -645,6 +619,9 @@ START_TEST(test_screen_copy_lines_sb)
 	tsm_screen_selection_start(screen, 41, 4);
 	tsm_screen_selection_target(screen, 3, 1);
 
+	ck_assert_int_eq(screen->sel_start.x, 3);
+	ck_assert_int_eq(screen->sel_end.x, 41);
+
 	r = tsm_screen_selection_copy(screen, &str);
 	ck_assert_ptr_ne(NULL, str);
 	ck_assert_str_eq("Hello World!\nThis is a copy test\nfor a selection with multiple lines.\nAll of them are on screen (not in the sb).", str);
@@ -666,6 +643,9 @@ START_TEST(test_screen_copy_lines_sb)
 	tsm_screen_reset(screen);
 	tsm_screen_selection_start(screen, 18, 6);
 	tsm_screen_selection_target(screen, 0, 4);
+
+	ck_assert_int_eq(screen->sel_start.x, 0);
+	ck_assert_int_eq(screen->sel_end.x, 18);
 
 	r = tsm_screen_selection_copy(screen, &str);
 	ck_assert_ptr_ne(NULL, str);
@@ -719,9 +699,7 @@ START_TEST(test_screen_copy_lines_sb_scrolled)
 	tsm_screen_selection_target(screen, 5, 2);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 0);
 	ck_assert_int_eq(screen->sel_end.x, 5);
-	ck_assert_int_eq(screen->sel_end.y, 2);
 
 	/* force the selected text to scroll into the sb */
 	for (i = 0; i < 40; i++) {
@@ -729,10 +707,8 @@ START_TEST(test_screen_copy_lines_sb_scrolled)
 	}
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, -1);
 	ck_assert_ptr_ne(screen->sel_start.line, NULL);
 	ck_assert_int_eq(screen->sel_end.x, 5);
-	ck_assert_int_eq(screen->sel_end.y, -1);
 	ck_assert_ptr_ne(screen->sel_end.line, NULL);
 	ck_assert_ptr_ne(screen->sel_start.line, screen->sel_end.line);
 
@@ -754,19 +730,15 @@ START_TEST(test_screen_copy_lines_sb_scrolled)
 	tsm_screen_selection_target(screen, 5, 2);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 0);
 	ck_assert_int_eq(screen->sel_end.x, 5);
-	ck_assert_int_eq(screen->sel_end.y, 0);
 
 	tsm_screen_newline(screen);
 	tsm_screen_newline(screen);
 	tsm_screen_newline(screen);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 0);
 	ck_assert_ptr_ne(screen->sel_start.line, NULL);
 	ck_assert_int_eq(screen->sel_end.x, 5);
-	ck_assert_int_eq(screen->sel_end.y, 0);
 	ck_assert_ptr_ne(screen->sel_end.line, NULL);
 	ck_assert_ptr_ne(screen->sel_start.line, screen->sel_end.line);
 
@@ -810,9 +782,7 @@ START_TEST(test_screen_copy_lines_sb_scrolled_cut_off)
 	tsm_screen_selection_target(screen, 5, 2);
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, 0);
 	ck_assert_int_eq(screen->sel_end.x, 5);
-	ck_assert_int_eq(screen->sel_end.y, 2);
 
 	/* force the selected text to scroll up */
 	for (i = 0; i < 39; i++) {
@@ -820,11 +790,9 @@ START_TEST(test_screen_copy_lines_sb_scrolled_cut_off)
 	}
 
 	ck_assert_int_eq(screen->sel_start.x, 3);
-	ck_assert_int_eq(screen->sel_start.y, -1);
-	ck_assert_ptr_eq(screen->sel_start.line, NULL);
+	ck_assert(!is_in_scrollback(&screen->sel_start));
 	ck_assert_int_eq(screen->sel_end.x, 5);
-	ck_assert_int_eq(screen->sel_end.y, 0);
-	ck_assert_ptr_eq(screen->sel_end.line, NULL);
+	ck_assert(!is_in_scrollback(&screen->sel_end));
 
 	r = tsm_screen_selection_copy(screen, &str);
 	ck_assert_ptr_ne(NULL, str);
