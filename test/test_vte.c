@@ -228,6 +228,12 @@ START_TEST(test_vte_osc_query)
 	input = "\e]11;?;12;?\x07";
 	strcpy(expected_output, "\e]11;rgb:1111/2323/3535\x07");
 	checked_vte_input(vte, input, strlen(input));
+
+	tsm_vte_unref(vte);
+	vte = NULL;
+
+	tsm_screen_unref(screen);
+	screen = NULL;
 }
 END_TEST
 
@@ -295,6 +301,12 @@ START_TEST(test_vte_osc4)
 	tsm_vte_input(vte, input, strlen(input));
 	ck_assert_ptr_eq(write_buffer, write_buffer_p);
 	storing_write_cb_reset();
+
+	tsm_vte_unref(vte);
+	vte = NULL;
+
+	tsm_screen_unref(screen);
+	screen = NULL;
 }
 END_TEST
 
