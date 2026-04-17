@@ -186,6 +186,16 @@ static int line_resize(struct tsm_screen *con, struct line *line,
 	return 0;
 }
 
+static void clear_selection_on_line(struct tsm_screen *con, struct line *line)
+{
+	if (!con->sel_active)
+		return;
+	if (con->sel_start.line == line)
+		con->sel_start.line = NULL;
+	if (con->sel_end.line == line)
+		con->sel_end.line = NULL;
+}
+
 /* This links the given line into the scrollback-buffer */
 static void link_to_scrollback(struct tsm_screen *con, struct line *line)
 {
@@ -195,14 +205,7 @@ static void link_to_scrollback(struct tsm_screen *con, struct line *line)
 	con->age = con->age_cnt;
 
 	if (con->sb.max == 0) {
-		if (con->sel_active) {
-			if (con->sel_start.line == line) {
-				con->sel_start.line = NULL;
-			}
-			if (con->sel_end.line == line) {
-				con->sel_end.line = NULL;
-			}
-		}
+		clear_selection_on_line(con, line);
 		line_free(line);
 		return;
 	}
@@ -220,15 +223,7 @@ static void link_to_scrollback(struct tsm_screen *con, struct line *line)
 			con->sb.pos = shl_dlist_first(&con->sb.list, struct line, list);
 			++con->sb.pos_num;
 		}
-
-		if (con->sel_active) {
-			if (con->sel_start.line == tmp) {
-				con->sel_start.line = NULL;
-			}
-			if (con->sel_end.line == tmp) {
-				con->sel_end.line = NULL;
-			}
-		}
+		clear_selection_on_line(con, tmp);
 		line_free(tmp);
 	}
 
@@ -800,14 +795,7 @@ void tsm_screen_set_max_sb(struct tsm_screen *con,
 		if (con->sb.pos == line)
 			con->sb.pos = shl_dlist_first(&con->sb.list, struct line, list);
 
-		if (con->sel_active) {
-			if (con->sel_start.line == line) {
-				con->sel_start.line = NULL;
-			}
-			if (con->sel_end.line == line) {
-				con->sel_end.line = NULL;
-			}
-		}
+		clear_selection_on_line(con, line);
 		line_free(line);
 	}
 	con->sb.max = max;
