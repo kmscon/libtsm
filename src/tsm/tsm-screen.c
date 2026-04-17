@@ -441,6 +441,12 @@ static inline unsigned int to_abs_y(struct tsm_screen *con, unsigned int y)
 	return con->margin_top + y;
 }
 
+static void reset_scrollback_position(struct tsm_screen *con)
+{
+	con->sb.pos = NULL;
+	con->sb.pos_num = con->sb.count;
+}
+
 SHL_EXPORT
 int tsm_screen_new(struct tsm_screen **out, tsm_log_t log, void *log_data)
 {
@@ -960,6 +966,7 @@ void tsm_screen_reset(struct tsm_screen *con)
 			con->tab_ruler[i] = false;
 	}
 	tsm_screen_selection_reset(con);
+	reset_scrollback_position(con);
 }
 
 SHL_EXPORT
@@ -980,6 +987,7 @@ void tsm_screen_set_flags(struct tsm_screen *con, unsigned int flags)
 		con->age = con->age_cnt;
 		con->lines = con->alt_lines;
 		tsm_screen_selection_reset(con);
+		reset_scrollback_position(con);
 
 		/* save attributes of main screen when we switch to alt screen */
 		memcpy(&con->def_attr_main, &con->def_attr, sizeof(con->def_attr));
@@ -1013,6 +1021,7 @@ void tsm_screen_reset_flags(struct tsm_screen *con, unsigned int flags)
 		con->age = con->age_cnt;
 		con->lines = con->main_lines;
 		tsm_screen_selection_reset(con);
+		reset_scrollback_position(con);
 	}
 
 	if ((old & TSM_SCREEN_HIDE_CURSOR) &&

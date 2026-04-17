@@ -263,7 +263,6 @@ START_TEST(test_screen_copy_lines)
 	str = NULL;
 
 	/* Select "This is a copy test\nfor a selection" from top left and to bottom right copy it */
-	tsm_screen_reset(screen);
 	tsm_screen_selection_start(screen, 0, 2);
 	tsm_screen_selection_target(screen, 14, 3);
 
@@ -274,7 +273,6 @@ START_TEST(test_screen_copy_lines)
 	str = NULL;
 
 	/* Select all text excluding the first 3 spaces and the trailing '-' chars from bottom right to top left and copy it */
-	tsm_screen_reset(screen);
 	tsm_screen_selection_start(screen, 41, 4);
 	tsm_screen_selection_target(screen, 3, 1);
 
@@ -604,7 +602,6 @@ START_TEST(test_screen_copy_lines_sb)
 	str = NULL;
 
 	/* Select "This is a copy test\nfor a selection" from top left and to bottom right copy it */
-	tsm_screen_reset(screen);
 	tsm_screen_selection_start(screen, 0, 2);
 	tsm_screen_selection_target(screen, 14, 3);
 
@@ -615,7 +612,6 @@ START_TEST(test_screen_copy_lines_sb)
 	str = NULL;
 
 	/* Select all text excluding the first 3 spaces and the trailing '-' chars from bottom right to top left and copy it */
-	tsm_screen_reset(screen);
 	tsm_screen_selection_start(screen, 41, 4);
 	tsm_screen_selection_target(screen, 3, 1);
 
@@ -629,7 +625,6 @@ START_TEST(test_screen_copy_lines_sb)
 	str = NULL;
 
 	/* Select from scroll back buffer and the screen from top left to bottom right and copy it */
-	tsm_screen_reset(screen);
 	tsm_screen_selection_start(screen, 0, 4);
 	tsm_screen_selection_target(screen, 18, 6);
 
@@ -640,7 +635,6 @@ START_TEST(test_screen_copy_lines_sb)
 	str = NULL;
 
 	/* Select from scroll back buffer and the screen from bottom right to top left and copy it */
-	tsm_screen_reset(screen);
 	tsm_screen_selection_start(screen, 18, 6);
 	tsm_screen_selection_target(screen, 0, 4);
 
@@ -654,7 +648,6 @@ START_TEST(test_screen_copy_lines_sb)
 	str = NULL;
 
 	/* Select from scroll back buffer and the screen from bottom right to top left and copy it */
-	tsm_screen_reset(screen);
 	tsm_screen_selection_start(screen, 8, 6);
 	tsm_screen_selection_target(screen, 7, 4);
 
