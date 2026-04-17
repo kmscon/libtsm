@@ -959,6 +959,7 @@ void tsm_screen_reset(struct tsm_screen *con)
 		else
 			con->tab_ruler[i] = false;
 	}
+	tsm_screen_selection_reset(con);
 }
 
 SHL_EXPORT
@@ -978,6 +979,7 @@ void tsm_screen_set_flags(struct tsm_screen *con, unsigned int flags)
 	if (!(old & TSM_SCREEN_ALTERNATE) && (flags & TSM_SCREEN_ALTERNATE)) {
 		con->age = con->age_cnt;
 		con->lines = con->alt_lines;
+		tsm_screen_selection_reset(con);
 
 		/* save attributes of main screen when we switch to alt screen */
 		memcpy(&con->def_attr_main, &con->def_attr, sizeof(con->def_attr));
@@ -1010,6 +1012,7 @@ void tsm_screen_reset_flags(struct tsm_screen *con, unsigned int flags)
 	if ((old & TSM_SCREEN_ALTERNATE) && (flags & TSM_SCREEN_ALTERNATE)) {
 		con->age = con->age_cnt;
 		con->lines = con->main_lines;
+		tsm_screen_selection_reset(con);
 	}
 
 	if ((old & TSM_SCREEN_HIDE_CURSOR) &&
