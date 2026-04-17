@@ -55,7 +55,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include "libtsm.h"
 #include "libtsm-int.h"
 #include "shl-llog.h"
@@ -139,48 +138,40 @@ void tsm_screen_selection_reset(struct tsm_screen *con)
 /* calculates the line length from the beginning to the last non zero character */
 static unsigned int calc_line_len(struct line *line)
 {
-	unsigned int line_len = 0;
 	int i;
 
-	for (i = 0; i < line->size; i++) {
-		if (line->cells[i].ch != 0) {
-			line_len = i + 1;
-		}
-	}
-
-	return line_len;
+	for (i = line->size - 1; i >= 0; i--)
+		if (line->cells[i].ch != 0)
+			return i + 1;
+	return 0;
 }
 
 /* TODO: tsm_ucs4_to_utf8 expects UCS4 characters, but a cell contains a
  * tsm-symbol (which can contain multiple UCS4 chars). Fix this when introducing
  * support for combining characters. */
-static unsigned int copy_line(struct line *line, char *buf,
-			      unsigned int start, unsigned int len)
+static unsigned int copy_line(struct tsm_screen *con, struct line *line, char *buf)
 {
-	unsigned int i, end;
+	unsigned int i, start, end;
 	char *pos = buf;
 	int line_len;
 
 	line_len = calc_line_len(line);
-	if (start > line_len) {
+	start = (con->sel_start.line == line) ? con->sel_start.x : 0;
+	end = (con->sel_end.line == line) ? con->sel_end.x + 1 : con->size_x;
+
+	if (start > line_len)
 		return 0;
-	}
 
-	end = start + len;
-
-	if (end > line_len) {
+	if (end > line_len)
 		end = line_len;
-	}
 
-	for (i = start; i < line->size && i < end; ++i) {
-		if (i < line->size || !line->cells[i].ch)
+	for (i = start; i < end; i++) {
+		if (line->cells[i].ch)
 			pos += tsm_ucs4_to_utf8(line->cells[i].ch, pos);
 		else
 			pos += tsm_ucs4_to_utf8(' ', pos);
 	}
-
 	pos += tsm_ucs4_to_utf8('\n', pos);
-
 	return pos - buf;
 }
 
@@ -284,6 +275,12 @@ void tsm_screen_selection_word(struct tsm_screen *con,
 	word_select(con, posx, posy);
 }
 
+/*
+ * Get the index of a line in the screen
+ *
+ * If the line is in the scroll back buffer, return 0
+ * Otherwise, return the index of the line in the screen
+ */
 static unsigned int get_line_index(struct tsm_screen *con, struct line *line)
 {
 	unsigned int i = 0;
@@ -330,30 +327,6 @@ static int selection_count_lines(struct tsm_screen *con, struct selection_pos *s
 }
 
 /*
- * Calculate the number of selected cells in a line
- */
-static int calc_selection_line_len(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end, struct line *line)
-{
-	/* one-line selection */
-	if (start->line == end->line) {
-		return end->x - start->x + 1;
-	}
-
-	/* first line of a multi-line selection */
-	if (line == start->line) {
-		return con->size_x - start->x;
-	}
-
-	/* last line of a multi-line selection */
-	if (line == end->line) {
-		return end->x + 1;
-	}
-
-	/* every other selection */
-	return con->size_x;
-}
-
-/*
  * Calculate the maximum needed space for the number of lines given
  */
 static unsigned int calc_line_copy_buffer(struct tsm_screen *con, unsigned int num_lines)
@@ -366,14 +339,10 @@ static int copy_lines(struct tsm_screen *con, struct selection_pos *start, struc
 {
 	unsigned int index = get_line_index(con, start->line);
 	struct line *iter;
-	int line_len;
-	int line_x = start->x;
 
 	iter = start->line;
 	while (iter) {
-		line_len = calc_selection_line_len(con, start, end, iter);
-		pos += copy_line(iter, &(buf[pos]), line_x, line_len);
-		line_x = 0;
+		pos += copy_line(con, iter, &(buf[pos]));
 		if (iter == end->line)
 			break;
 		iter = get_next_line(con, iter, &index);
