@@ -55,6 +55,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "libtsm.h"
 #include "libtsm-int.h"
 #include "shl-llog.h"
@@ -283,53 +284,48 @@ void tsm_screen_selection_word(struct tsm_screen *con,
 	word_select(con, posx, posy);
 }
 
-/*
- * Counts the lines a normalized selection selects on the scroll back buffer
- *
- * Does not count the lines selected on the screen
- */
-static int selection_count_lines_sb(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end)
+static unsigned int get_line_index(struct tsm_screen *con, struct line *line)
+{
+	unsigned int i = 0;
+	
+	if (line->sb_id)
+		return 0;
+
+	for (i = 0; i < con->size_y; i++) {
+		if (con->lines[i] == line)
+			return i;
+	}
+	return 0;
+}
+
+static struct line *get_next_line(struct tsm_screen *con, struct line *line, unsigned int *index)
+{
+	struct line *next;
+
+	if (line->sb_id) {
+		next = shl_dlist_next(line, &con->sb.list, list);
+		if (next)
+			return next;
+		*index = 0;
+		return con->lines[0];
+	} else if (*index < con->size_y) {
+		(*index)++;
+		return con->lines[*index];
+	}
+	return NULL;
+}
+
+static int selection_count_lines(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end)
 {
 	int count = 1;
+	unsigned int index = get_line_index(con, start->line);
 	struct line *iter;
-
-	if (!is_in_scrollback(start))
-		return 0;
 
 	iter = start->line;
 	while (iter && iter != end->line) {
 		count++;
-		iter = shl_dlist_next(iter, &con->sb.list, list);
+		iter = get_next_line(con, iter, &index);
 	}
-	return count;
-}
-
-/*
- * Counts the lines a normalized selection selects on the screen
- *
- * Does not count the lines selected in the scroll back buffer
- */
-static int selection_count_lines(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end)
-{
-	bool in_sel;
-	int i, count = 0;
-
-	/* Selection only spans lines of the scroll back buffer */
-	if (is_in_scrollback(end))
-		return 0;
-	if (is_in_scrollback(start))
-		in_sel = true;
-
-	for (i = 0; i < con->size_y; i++) {
-		if (start->line == con->lines[i])
-			in_sel = true;
-
-		if (in_sel)
-			count++;
-		if (end->line == con->lines[i])
-			return count;
-	}
-	llog_error(con, "selection_count_lines: end->line not found");
 	return count;
 }
 
@@ -366,56 +362,21 @@ static unsigned int calc_line_copy_buffer(struct tsm_screen *con, unsigned int n
 	return con->size_x * num_lines * 4 + 1;
 }
 
-/*
- * Copy all selected lines from the scroll back buffer
- */
-static int copy_lines_sb(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end, char *buf, int pos)
+static int copy_lines(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end, char *buf, int pos)
 {
-	struct line *iter; 
-	int line_x, line_len;
-
-	if (!is_in_scrollback(start))
-		return pos;
+	unsigned int index = get_line_index(con, start->line);
+	struct line *iter;
+	int line_len;
+	int line_x = start->x;
 
 	iter = start->line;
-	line_x = start->x;
 	while (iter) {
 		line_len = calc_selection_line_len(con, start, end, iter);
 		pos += copy_line(iter, &(buf[pos]), line_x, line_len);
 		line_x = 0;
 		if (iter == end->line)
 			break;
-		iter = shl_dlist_next(iter, &con->sb.list, list);
-	}
-	return pos;
-}
-
-/*
- * Copy all selected lines from the regular screen
- */
-static int copy_lines(struct tsm_screen *con, struct selection_pos *start, struct selection_pos *end, char *buf, int pos)
-{
-	int line_len, i;
-	int line_x = 0;
-	bool in_sel;
-
-	if (is_in_scrollback(end))
-		return pos;
-
-	in_sel = is_in_scrollback(start);
-
-	for (i = 0; i < con->size_y; i++) {
-		if (start->line == con->lines[i]) {
-			in_sel = true;
-			line_x = start->x;
-		}
-		if (in_sel) {
-			line_len = calc_selection_line_len(con, start, end, con->lines[i]);
-			pos += copy_line(con->lines[i], &(buf[pos]), line_x, line_len);
-			line_x = 0;
-		}
-		if (end->line == con->lines[i])
-			break;
+		iter = get_next_line(con, iter, &index);
 	}
 	return pos;
 }
@@ -451,8 +412,7 @@ int tsm_screen_selection_copy(struct tsm_screen *con, char **out)
 		start->x = 0;
 	}
 
-	total_lines =  selection_count_lines_sb(con, start, end);
-	total_lines += selection_count_lines(con,start, end);
+	total_lines =  selection_count_lines(con, start, end);
 	buf_size = calc_line_copy_buffer(con, total_lines);
 
 	*out = calloc(buf_size, 1);
@@ -460,7 +420,6 @@ int tsm_screen_selection_copy(struct tsm_screen *con, char **out)
 		return -ENOMEM;
 	}
 
-	pos = copy_lines_sb(con, start, end, *out, pos);
 	pos = copy_lines(con, start, end, *out, pos);
 
 	/* remove last line break */
