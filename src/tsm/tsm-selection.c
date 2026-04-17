@@ -239,7 +239,7 @@ void tsm_screen_selection_start(struct tsm_screen *con,
 				unsigned int posx,
 				unsigned int posy)
 {
-	if (!con)
+	if (!con || posx >= con->size_x || posy >= con->size_y)
 		return;
 
 	screen_inc_age(con);
@@ -256,7 +256,7 @@ void tsm_screen_selection_target(struct tsm_screen *con,
 				 unsigned int posx,
 				 unsigned int posy)
 {
-	if (!con || !con->sel_active)
+	if (!con || !con->sel_active || posx >= con->size_x || posy >= con->size_y)
 		return;
 
 	screen_inc_age(con);
@@ -273,7 +273,7 @@ void tsm_screen_selection_word(struct tsm_screen *con,
 			       unsigned int posx,
 			       unsigned int posy)
 {
-	if (!con)
+	if (!con || posx >= con->size_x || posy >= con->size_y)
 		return;
 
 	screen_inc_age(con);
