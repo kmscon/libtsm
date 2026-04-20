@@ -798,6 +798,65 @@ START_TEST(test_screen_copy_lines_sb_scrolled_cut_off)
 }
 END_TEST
 
+static void write_random_string(struct tsm_screen *screen, int count)
+{
+	char str[201];
+	int len = rand() % 200;
+	int i, c;
+
+	for (c = 0; c < count; c++) {
+		for (i = 0; i < len; i++)
+			str[i] = ' ' + rand() % 95;
+		str[len] = '\0';
+		write_string(screen, str);
+		tsm_screen_newline(screen);
+	}
+}
+
+START_TEST(test_screen_robustness)
+{
+	struct tsm_screen *screen;
+	int sb_size = 500;
+	int size_x, size_y;
+	int r, i;
+	char *str = NULL;
+
+	srand(0x12345678);
+
+	r = tsm_screen_new(&screen, NULL, NULL);
+	ck_assert_int_eq(r, 0);
+
+	r = tsm_screen_resize(screen, 80, 40);
+	ck_assert_int_eq(r, 0);
+
+	tsm_screen_set_max_sb(screen, sb_size);
+
+	write_random_string(screen, 600);
+
+	for (i = 0; i < 500; i++) {
+		size_x =  1 + rand() % 100;
+		size_y =  1 + rand() % 100;
+		printf("screen size: %dx%d\n", size_x, size_y);
+		r = tsm_screen_resize(screen, size_x, size_y);
+		ck_assert_int_eq(r, 0);
+		tsm_screen_scroll_up(screen, rand() % sb_size);
+		tsm_screen_scroll_down(screen, rand() % sb_size);
+		tsm_screen_selection_start(screen, rand() % size_x, rand() % size_y);
+		tsm_screen_selection_target(screen, rand() % size_x, rand() % size_y);
+		r = tsm_screen_selection_copy(screen, &str);
+		ck_assert_int_ge(r, 0);
+		if (str) {
+			free(str);
+			str = NULL;
+		}
+		write_random_string(screen, rand() % 100);
+	}
+
+	tsm_screen_unref(screen);
+	screen = NULL;
+}
+END_TEST
+
 TEST_DEFINE_CASE(misc)
 	TEST(test_screen_copy_incomplete)
 	TEST(test_screen_copy_one_cell)
@@ -811,6 +870,7 @@ TEST_DEFINE_CASE(misc)
 	TEST(test_screen_copy_lines_sb)
 	TEST(test_screen_copy_lines_sb_scrolled)
 	TEST(test_screen_copy_lines_sb_scrolled_cut_off)
+	TEST(test_screen_robustness)
 TEST_END_CASE
 
 TEST_DEFINE(
