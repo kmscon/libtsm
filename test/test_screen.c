@@ -257,6 +257,34 @@ START_TEST(test_screen_sb_get_line_pos)
 	ck_assert_int_eq(tsm_screen_sb_get_line_count(screen), 3);
 	ck_assert_int_eq(tsm_screen_sb_get_line_pos(screen), 3);
 
+	tsm_screen_newline(screen);
+	ck_assert_int_eq(tsm_screen_sb_get_line_count(screen), 4);
+	ck_assert_int_eq(tsm_screen_sb_get_line_pos(screen), 4);
+
+	tsm_screen_newline(screen);
+	ck_assert_int_eq(tsm_screen_sb_get_line_count(screen), 5);
+	ck_assert_int_eq(tsm_screen_sb_get_line_pos(screen), 5);
+
+	tsm_screen_sb_up(screen, 2);
+	ck_assert_int_eq(tsm_screen_sb_get_line_count(screen), 5);
+	ck_assert_int_eq(tsm_screen_sb_get_line_pos(screen), 3);
+
+	tsm_screen_newline(screen);
+	ck_assert_int_eq(tsm_screen_sb_get_line_count(screen), 5);
+	ck_assert_int_eq(tsm_screen_sb_get_line_pos(screen), 2);
+
+	r = tsm_screen_resize(screen, 5, 3);
+	ck_assert_int_eq(r, 0);
+
+	ck_assert_int_eq(tsm_screen_sb_get_line_count(screen), 5);
+	ck_assert_int_eq(tsm_screen_sb_get_line_pos(screen), 0);
+
+	r = tsm_screen_resize(screen, 5, 5);
+	ck_assert_int_eq(r, 0);
+
+	ck_assert_int_eq(tsm_screen_sb_get_line_count(screen), 3);
+	ck_assert_int_eq(tsm_screen_sb_get_line_pos(screen), 0);
+
 	tsm_screen_unref(screen);
 	screen = NULL;
 }
