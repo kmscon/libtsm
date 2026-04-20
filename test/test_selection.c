@@ -798,6 +798,26 @@ START_TEST(test_screen_copy_lines_sb_scrolled_cut_off)
 }
 END_TEST
 
+static void check_sb_pos(struct tsm_screen *screen)
+{
+	struct line *line = shl_dlist_first(&screen->sb.list, struct line, list);
+	int count = 0;
+
+	if (!screen->sb.pos) {
+		ck_assert_int_eq(screen->sb.pos_num, screen->sb.count);
+		return;
+	}
+
+	ck_assert_int_le(screen->sb.pos_num, screen->sb.count);
+
+	while (line && line != screen->sb.pos) {
+		count++;
+		line = shl_dlist_next(line, &screen->sb.list, list);
+	}
+
+	ck_assert_int_eq(count, screen->sb.pos_num);
+}
+
 static void write_random_string(struct tsm_screen *screen, int count)
 {
 	char str[201];
@@ -834,14 +854,18 @@ START_TEST(test_screen_robustness)
 
 	write_random_string(screen, 600);
 
+	check_sb_pos(screen);
+
 	for (i = 0; i < 300; i++) {
 		size_x =  1 + rand() % 100;
 		size_y =  1 + rand() % 100;
 		r = tsm_screen_resize(screen, size_x, size_y);
 		ck_assert_int_eq(r, 0);
-		
-		tsm_screen_scroll_up(screen, rand() % sb_size);
-		tsm_screen_scroll_down(screen, rand() % sb_size);
+		check_sb_pos(screen);
+		tsm_screen_sb_up(screen, rand() % sb_size);
+		check_sb_pos(screen);
+		tsm_screen_sb_down(screen, rand() % sb_size);
+		check_sb_pos(screen);
 		tsm_screen_selection_start(screen, rand() % size_x, rand() % size_y);
 		tsm_screen_selection_target(screen, rand() % size_x, rand() % size_y);
 		for (j = 0; j < 50; j++) {
@@ -851,8 +875,10 @@ START_TEST(test_screen_robustness)
 				free(str);
 				str = NULL;
 			}
-			tsm_screen_scroll_up(screen, rand() % sb_size);
-			tsm_screen_scroll_down(screen, rand() % sb_size);
+			tsm_screen_sb_up(screen, sb_size );
+			check_sb_pos(screen);
+			tsm_screen_sb_down(screen, rand() % sb_size);
+			check_sb_pos(screen);
 		}
 		write_random_string(screen, rand() % 100);
 	}
