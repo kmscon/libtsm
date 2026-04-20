@@ -818,8 +818,9 @@ START_TEST(test_screen_robustness)
 	struct tsm_screen *screen;
 	int sb_size = 500;
 	int size_x, size_y;
-	int r, i;
+	int r, i, j;
 	char *str = NULL;
+
 
 	srand(0x12345678);
 
@@ -833,21 +834,25 @@ START_TEST(test_screen_robustness)
 
 	write_random_string(screen, 600);
 
-	for (i = 0; i < 500; i++) {
+	for (i = 0; i < 300; i++) {
 		size_x =  1 + rand() % 100;
 		size_y =  1 + rand() % 100;
-		printf("screen size: %dx%d\n", size_x, size_y);
 		r = tsm_screen_resize(screen, size_x, size_y);
 		ck_assert_int_eq(r, 0);
+		
 		tsm_screen_scroll_up(screen, rand() % sb_size);
 		tsm_screen_scroll_down(screen, rand() % sb_size);
 		tsm_screen_selection_start(screen, rand() % size_x, rand() % size_y);
 		tsm_screen_selection_target(screen, rand() % size_x, rand() % size_y);
-		r = tsm_screen_selection_copy(screen, &str);
-		ck_assert_int_ge(r, 0);
-		if (str) {
-			free(str);
-			str = NULL;
+		for (j = 0; j < 50; j++) {
+			r = tsm_screen_selection_copy(screen, &str);
+			ck_assert_int_ge(r, 0);
+			if (str) {
+				free(str);
+				str = NULL;
+			}
+			tsm_screen_scroll_up(screen, rand() % sb_size);
+			tsm_screen_scroll_down(screen, rand() % sb_size);
 		}
 		write_random_string(screen, rand() % 100);
 	}
