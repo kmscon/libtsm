@@ -222,7 +222,9 @@ static void link_to_scrollback(struct tsm_screen *con, struct line *line)
 		/* Only consider sb.max > 1, so there is always another line in sb. */
 		if (con->sb.pos == tmp) {
 			con->sb.pos = shl_dlist_first(&con->sb.list, struct line, list);
-			++con->sb.pos_num;
+			con->sb.pos_num = 0;
+		} else {
+			con->sb.pos_num--;
 		}
 		clear_selection_on_line(con, tmp);
 		line_free(tmp);
@@ -855,6 +857,8 @@ void tsm_screen_clear_sb(struct tsm_screen *con)
 SHL_EXPORT
 void tsm_screen_sb_up(struct tsm_screen *con, unsigned int num)
 {
+	struct line *prev;
+
 	if (!con || !num)
 		return;
 
@@ -870,8 +874,14 @@ void tsm_screen_sb_up(struct tsm_screen *con, unsigned int num)
 			if (con->sb.pos_num == 0)
 				return;
 
-			con->sb.pos = shl_dlist_last(&con->sb.pos->list, struct line, list);
+			prev = shl_dlist_prev(con->sb.pos, &con->sb.list, list);
+			if (!prev) {
+				llog_error(con, "prev is NULL, con->sb.pos_num: %d con->sb.count: %d",
+					   con->sb.pos_num, con->sb.count);
+				return;
+			}
 			--con->sb.pos_num;
+			con->sb.pos = prev;
 		} else {
 			con->sb.pos = shl_dlist_last(&con->sb.list, struct line, list);
 			con->sb.pos_num = con->sb.count - 1;
