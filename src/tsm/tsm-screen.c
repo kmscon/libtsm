@@ -64,6 +64,7 @@
 #include "libtsm.h"
 #include "libtsm-int.h"
 #include "shl-llog.h"
+#include "shl-macro.h"
 #include "shl_dlist.h"
 
 #define LLOG_SUBSYSTEM "tsm-screen"
@@ -238,6 +239,7 @@ static void link_to_scrollback(struct tsm_screen *con, struct line *line)
 static void remove_from_sb(struct tsm_screen *con, unsigned int num)
 {
 	struct line *tmp;
+	int i, copy_len;
 
 	/* TODO: more sophisticated ageing */
 	con->age = con->age_cnt;
@@ -257,9 +259,22 @@ static void remove_from_sb(struct tsm_screen *con, unsigned int num)
 			con->sb.pos_num = con->sb.count;
 			con->sb.pos = NULL;	
 		}
-		tmp->sb_id = 0;
-		memcpy(con->lines[num], tmp, sizeof(*tmp));
-		free(tmp);
+		/*
+		 * Copy the cells from the scrollback buffer to the line. scrollback buffer can have a different
+		 * size as current lines, because resizing doesn't resize lines in scrollback buffer.
+		 */
+		copy_len = shl_min(tmp->size, con->lines[num]->size);
+		memcpy(con->lines[num]->cells, tmp->cells, copy_len * sizeof(struct cell));
+		for (i = copy_len; i < con->size_x; i++)
+			screen_cell_init(con, &con->lines[num]->cells[i]);
+		con->lines[num]->age = con->age_cnt;
+
+		if (con->sel_active && con->sel_start.line == tmp)
+			con->sel_start.line = con->lines[num];
+		if (con->sel_active && con->sel_end.line == tmp)
+			con->sel_end.line = con->lines[num];
+
+		line_free(tmp);
 	}
 	if (!con->sb.pos)
 		con->sb.pos_num = con->sb.count;
