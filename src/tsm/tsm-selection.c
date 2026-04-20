@@ -305,7 +305,7 @@ static struct line *get_next_line(struct tsm_screen *con, struct line *line, uns
 			return next;
 		*index = 0;
 		return con->lines[0];
-	} else if (*index < con->size_y) {
+	} else if (*index < con->size_y - 1) {
 		(*index)++;
 		return con->lines[*index];
 	}
