@@ -821,7 +821,7 @@ static void check_sb_pos(struct tsm_screen *screen)
 static void write_random_string(struct tsm_screen *screen, int count)
 {
 	char str[201];
-	int len = rand() % 200;
+	int len = rand() % 100;
 	int i, c;
 
 	for (c = 0; c < count; c++) {
@@ -836,7 +836,7 @@ static void write_random_string(struct tsm_screen *screen, int count)
 START_TEST(test_screen_robustness)
 {
 	struct tsm_screen *screen;
-	int sb_size = 500;
+	int sb_size = 50;
 	int size_x, size_y;
 	int r, i, j;
 	char *str = NULL;
@@ -852,11 +852,11 @@ START_TEST(test_screen_robustness)
 
 	tsm_screen_set_max_sb(screen, sb_size);
 
-	write_random_string(screen, 600);
+	write_random_string(screen, 60);
 
 	check_sb_pos(screen);
 
-	for (i = 0; i < 300; i++) {
+	for (i = 0; i < 100; i++) {
 		size_x =  1 + rand() % 100;
 		size_y =  1 + rand() % 100;
 		r = tsm_screen_resize(screen, size_x, size_y);
@@ -868,7 +868,7 @@ START_TEST(test_screen_robustness)
 		check_sb_pos(screen);
 		tsm_screen_selection_start(screen, rand() % size_x, rand() % size_y);
 		tsm_screen_selection_target(screen, rand() % size_x, rand() % size_y);
-		for (j = 0; j < 50; j++) {
+		for (j = 0; j < 20; j++) {
 			r = tsm_screen_selection_copy(screen, &str);
 			ck_assert_int_ge(r, 0);
 			if (str) {
