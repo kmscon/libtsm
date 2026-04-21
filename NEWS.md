@@ -1,5 +1,21 @@
 # libtsm Release News
 
+## CHANGES WITH 4.5.0
+### New features
+* Support for terminal bell and keyboard LEDs by @aruiz in https://github.com/kmscon/libtsm/pull/34
+### Bug fixes
+* Fix build musl by @kdj0c in https://github.com/kmscon/libtsm/pull/32
+* test/vte: fix memory leak in vte tests by @kdj0c in https://github.com/kmscon/libtsm/pull/35
+* Refactor scrollback and selection by @kdj0c in https://github.com/kmscon/libtsm/pull/36
+* screen: Fix wrong attribute for new cells when resizing by @kdj0c in https://github.com/kmscon/libtsm/pull/37
+* Fix remove from sb by @kdj0c in https://github.com/kmscon/libtsm/pull/38
+* Fix get next line by @kdj0c in https://github.com/kmscon/libtsm/pull/39
+* Fix scrollback position by @kdj0c in https://github.com/kmscon/libtsm/pull/40
+* test: robustness, make the test faster. by @kdj0c in https://github.com/kmscon/libtsm/pull/41
+
+### New Contributors
+* @aruiz made their first contribution in https://github.com/kmscon/libtsm/pull/34
+
 ## CHANGES WITH 4.4.3
 ### New features
 * Add support for VT200 mouse tracking by @caramelli in https://github.com/kmscon/libtsm/pull/27
@@ -9,7 +25,7 @@
 * vte: guard case 'm' (SGR) against CSI_GT prefix by @kdj0c in https://github.com/kmscon/libtsm/pull/29
 * wcwidth: update to upstream v4 by @kdj0c in https://github.com/kmscon/libtsm/pull/28
 
-## New Contributors
+### New Contributors
 * @Karlson2k made their first contribution in https://github.com/kmscon/libtsm/pull/24
 * @caramelli made their first contribution in https://github.com/kmscon/libtsm/pull/26
 
@@ -21,7 +37,7 @@
 * Fix CSI 18t and 19t reporting size. by @kdj0c in https://github.com/kmscon/libtsm/pull/20
 * resize: Fix a corner case when resizing by @kdj0c in https://github.com/kmscon/libtsm/pull/22
 
-## New Contributors
+### New Contributors
 * @1ace made their first contribution in https://github.com/kmscon/libtsm/pull/19
 
 ## CHANGES WITH 4.4.1
