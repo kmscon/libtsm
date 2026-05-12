@@ -3372,17 +3372,17 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 		return false;
 	}
 
+	if (button == TSM_MOUSE_BUTTON_WHEEL_UP) {
+		button = 64;
+	} else if (button == TSM_MOUSE_BUTTON_WHEEL_DOWN) {
+		button = 65;
+	}
+
 	if (vte->mouse_mode == TSM_VTE_MOUSE_MODE_SGR || vte->mouse_mode == TSM_VTE_MOUSE_MODE_PIXEL) {
 		/* internally we use zero indexing but the xterm spec requires the
 		 * top left cell to have the coordinates 1,1 */
 		cell_x++;
 		cell_y++;
-
-		if (button == TSM_MOUSE_BUTTON_WHEEL_UP) {
-			button = 64;
-		} else if (button == TSM_MOUSE_BUTTON_WHEEL_DOWN) {
-			button = 65;
-		}
 
 		reply_flags = button | modifiers;
 	}
