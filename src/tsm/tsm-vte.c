@@ -1056,8 +1056,12 @@ static void do_param(struct tsm_vte *vte, uint32_t data)
 	int new;
 
 	if (data == ';') {
-		if (vte->csi_argc < CSI_ARG_MAX)
+		if (vte->csi_argc < CSI_ARG_MAX) {
+			// default parameter value is 0 if omitted
+			if (vte->csi_argv[vte->csi_argc] == -1)
+				vte->csi_argv[vte->csi_argc] = 0;
 			vte->csi_argc++;
+		}
 		return;
 	}
 
