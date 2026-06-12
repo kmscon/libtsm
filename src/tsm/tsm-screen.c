@@ -543,6 +543,7 @@ void tsm_screen_unref(struct tsm_screen *con)
 	free(con->alt_lines);
 	free(con->tab_ruler);
 	tsm_symbol_table_unref(con->sym_table);
+	free(con->cells);
 	free(con);
 }
 

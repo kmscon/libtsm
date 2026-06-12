@@ -155,6 +155,10 @@ struct tsm_screen {
 	bool sel_active;
 	struct selection_pos sel_start;
 	struct selection_pos sel_end;
+
+	/* draw2 interface */
+	struct tsm_screen_cell *cells;
+	unsigned int cells_count;
 };
 
 void screen_cell_init(struct tsm_screen *con, struct cell *cell);

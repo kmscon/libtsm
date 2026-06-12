@@ -172,6 +172,31 @@ struct tsm_screen_attr {
 	unsigned int blink : 1;		/* blinking character */
 };
 
+/* Attributes that alter the glyph shape */
+typedef union{
+	struct {
+		uint8_t bold      : 1;
+		uint8_t italic    : 1;
+		uint8_t underline : 1;
+		uint8_t blink     : 1;
+		uint8_t reserved  : 5;
+	};
+	uint8_t u8;
+} tsm_screen_attr2_t;
+
+struct tsm_screen_color {
+	uint8_t r; /* red */
+	uint8_t g; /* green */
+	uint8_t b; /* blue */
+};
+
+struct tsm_screen_cell {
+	uint32_t ch;                  /* character */
+	struct tsm_screen_color fg;   /* foreground color */
+	struct tsm_screen_color bg;   /* background color */
+	tsm_screen_attr2_t attr2;     /* glyph attributes */
+};
+
 typedef int (*tsm_screen_draw_cb) (struct tsm_screen *con,
 				   uint64_t id,
 				   const uint32_t *ch,
@@ -267,6 +292,8 @@ int tsm_screen_selection_copy(struct tsm_screen *con, char **out);
 
 tsm_age_t tsm_screen_draw(struct tsm_screen *con, tsm_screen_draw_cb draw_cb,
 			  void *data);
+
+const struct tsm_screen_cell *tsm_screen_draw2(struct tsm_screen *con);
 
 /** @} */
 
