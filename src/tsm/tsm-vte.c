@@ -2753,6 +2753,60 @@ void tsm_vte_set_backspace_sends_delete(struct tsm_vte *vte, bool enable)
 	vte->backspace_sends_delete = enable;
 }
 
+/*
+Code     Modifiers
+---------+---------------------------
+   2     | Shift
+   3     | Alt
+   4     | Shift + Alt
+   5     | Control
+   6     | Shift + Control
+   7     | Alt + Control
+   8     | Shift + Alt + Control
+---------+---------------------------
+*/
+
+static char csi_modifier_from_mask(unsigned int mods)
+{
+	mods = mods & (TSM_CONTROL_MASK | TSM_SHIFT_MASK | TSM_ALT_MASK);
+	switch(mods) {
+		case TSM_SHIFT_MASK:
+			return '2';
+		case TSM_ALT_MASK:
+			return '3';
+		case TSM_SHIFT_MASK | TSM_ALT_MASK:
+			return '4';
+		case TSM_CONTROL_MASK:
+			return '5';
+		case TSM_CONTROL_MASK | TSM_SHIFT_MASK:
+			return '6';
+		case TSM_CONTROL_MASK | TSM_ALT_MASK:
+			return '7';
+		case TSM_CONTROL_MASK | TSM_ALT_MASK | TSM_SHIFT_MASK:
+			return '8';
+		default:
+			return 0;
+	}
+}
+
+static void vte_write_arrow(struct tsm_vte *vte, char direction, unsigned int mods)
+{
+	char code_with_modifier[6] = {'\e', '[', '1', ';', '0', 'A'};
+	char code[3] = {'\e', '[',  'A'};
+
+	int modifier = csi_modifier_from_mask(mods);
+	if (modifier) {
+		code_with_modifier[4] = modifier;
+		code_with_modifier[5] = direction;
+		vte_write(vte, code_with_modifier, 6);
+	} else {
+		if (vte->flags & TSM_VTE_FLAG_CURSOR_KEY_MODE)
+			code[1] = 'O';
+		code[2] = direction;
+		vte_write(vte, code, 3);
+	}
+}
+
 SHL_EXPORT
 bool tsm_vte_handle_keyboard(struct tsm_vte *vte, uint32_t keysym,
 			     uint32_t ascii, unsigned int mods,
@@ -3027,51 +3081,19 @@ bool tsm_vte_handle_keyboard(struct tsm_vte *vte, uint32_t keysym,
 			return true;
 		case XKB_KEY_Up:
 		case XKB_KEY_KP_Up:
-			if (mods & TSM_CONTROL_MASK) {
-				vte_write(vte, "\e[1;5A", 6);
-			} else if (mods & TSM_SHIFT_MASK) {
-				vte_write(vte, "\e[1;2A", 6);
-			} else if (vte->flags & TSM_VTE_FLAG_CURSOR_KEY_MODE) {
-				vte_write(vte, "\eOA", 3);
-			} else {
-				vte_write(vte, "\e[A", 3);
-			}
+			vte_write_arrow(vte, 'A', mods);
 			return true;
 		case XKB_KEY_Down:
 		case XKB_KEY_KP_Down:
-			if (mods & TSM_CONTROL_MASK) {
-				vte_write(vte, "\e[1;5B", 6);
-			} else if (mods & TSM_SHIFT_MASK) {
-				vte_write(vte, "\e[1;2B", 6);
-			} else if (vte->flags & TSM_VTE_FLAG_CURSOR_KEY_MODE) {
-				vte_write(vte, "\eOB", 3);
-			} else {
-				vte_write(vte, "\e[B", 3);
-			}
+			vte_write_arrow(vte, 'B', mods);
 			return true;
 		case XKB_KEY_Right:
 		case XKB_KEY_KP_Right:
-			if (mods & TSM_CONTROL_MASK) {
-				vte_write(vte, "\e[1;5C", 6);
-			} else if (mods & TSM_SHIFT_MASK) {
-				vte_write(vte, "\e[1;2C", 6);
-			} else if (vte->flags & TSM_VTE_FLAG_CURSOR_KEY_MODE) {
-				vte_write(vte, "\eOC", 3);
-			} else {
-				vte_write(vte, "\e[C", 3);
-			}
+			vte_write_arrow(vte, 'C', mods);
 			return true;
 		case XKB_KEY_Left:
 		case XKB_KEY_KP_Left:
-			if (mods & TSM_CONTROL_MASK) {
-				vte_write(vte, "\e[1;5D", 6);
-			} else if (mods & TSM_SHIFT_MASK) {
-				vte_write(vte, "\e[1;2D", 6);
-			} else if (vte->flags & TSM_VTE_FLAG_CURSOR_KEY_MODE) {
-				vte_write(vte, "\eOD", 3);
-			} else {
-				vte_write(vte, "\e[D", 3);
-			}
+			vte_write_arrow(vte, 'D', mods);
 			return true;
 		case XKB_KEY_KP_Insert:
 		case XKB_KEY_KP_0:
