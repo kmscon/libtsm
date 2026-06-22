@@ -1,5 +1,22 @@
 # libtsm Release News
 
+## CHANGES WITH 4.6.0
+### New draw2 interface
+A new tsm_screen_draw2() interface is available that provides a simplified drawing API.
+In a future release, we may remove the existing tsm_screen_draw() interface, so it is 
+recommended to use tsm_screen_draw2() instead.
+
+### New features
+* Add a new draw2 interface by @kdj0c in https://github.com/kmscon/libtsm/pull/50
+* vte: Add dim support by @kdj0c in https://github.com/kmscon/libtsm/pull/51
+### Bug fixes
+* vte: map mouse wheel up/down buttons correctly by @mierenhoop in https://github.com/kmscon/libtsm/pull/45
+* fix CSI default parameter by @kdj0c in https://github.com/kmscon/libtsm/pull/47
+* vte: Fix ctrl+shift+arrows by @kdj0c in https://github.com/kmscon/libtsm/pull/49
+
+## New Contributors
+* @mierenhoop made their first contribution in https://github.com/kmscon/libtsm/pull/45
+
 ## CHANGES WITH 4.5.0
 ### New features
 * Support for terminal bell and keyboard LEDs by @aruiz in https://github.com/kmscon/libtsm/pull/34
