@@ -193,6 +193,13 @@ tsm_age_t tsm_screen_draw(struct tsm_screen *con, tsm_screen_draw_cb draw_cb,
 	}
 }
 
+static void color_dim(struct tsm_screen_color  *out, const struct tsm_screen_color *fg, const struct tsm_screen_color *bg)
+{
+	out->r = bg->r / 2 + fg->r / 2;
+	out->g = bg->g / 2 + fg->g / 2;
+	out->b = bg->b / 2 + fg->b / 2;
+}
+
 /*
  * tsm_screen_draw2 returns a pointer to a table of tsm_screen_cell, one for each cell on the screen.
  * It uses a bit more memory, but should be much faster, as each cell is only 12 bytes.
@@ -287,6 +294,9 @@ const struct tsm_screen_cell *tsm_screen_draw2(struct tsm_screen *con)
 				out->bg.g = cell->attr.bg;
 				out->bg.b = cell->attr.bb;
 			}
+			if (cell->attr.dim)
+				color_dim(&out->fg, &out->fg, &out->bg);
+
 			if (sel_end && j == con->sel_end.x)
 				in_sel = !in_sel;
 		}
