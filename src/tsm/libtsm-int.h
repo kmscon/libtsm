@@ -153,8 +153,9 @@ struct tsm_screen {
 
 	/* selection */
 	bool sel_active;
-	struct selection_pos sel_start;
-	struct selection_pos sel_end;
+	struct selection_pos sel_begin; /* First cell selected */
+	struct selection_pos sel_start; /* First cell to copy in terminal order */
+	struct selection_pos sel_end;   /* Last cell to copy */
 
 	/* draw2 interface */
 	struct tsm_screen_cell *cells;
