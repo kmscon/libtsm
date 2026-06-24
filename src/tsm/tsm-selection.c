@@ -175,55 +175,32 @@ static unsigned int copy_line(struct tsm_screen *con, struct line *line, char *b
 	return pos - buf;
 }
 
-static void swap_selections(struct tsm_screen *con)
-{
-	struct selection_pos c;
-
-	c = con->sel_start;
-	con->sel_start = con->sel_end;
-	con->sel_end = c;
-}
-
 /*
- * Normalize a selection
- *
- * Start must always point to the top left and end to the bottom right cell
+ * Returns true if a is before b in terminal order
  */
-static void norm_selection(struct tsm_screen *con)
+static bool selection_is_before(struct tsm_screen *con, struct selection_pos *a, struct selection_pos *b)
 {
 	int i;
-	struct selection_pos *start, *end;
 
-	start = &con->sel_start;
-	end = &con->sel_end;
+	if (a->line == b->line)
+		return (a->x < b->x);
 
-	if (start->line == end->line) {
-		if (con->sel_start.x > con->sel_end.x)
-			swap_selections(con);
-		return;
-	}
+	if (is_in_scrollback(a) != is_in_scrollback(b))
+		return (is_in_scrollback(a));
 
-	if (is_in_scrollback(&con->sel_start) != is_in_scrollback(&con->sel_end)) {
-		if (is_in_scrollback(&con->sel_end))
-			swap_selections(con);
-		return;
-	}
+	if (is_in_scrollback(a) && is_in_scrollback(b))
+		return (a->line->sb_id < b->line->sb_id);
 
-	if (is_in_scrollback(&con->sel_start) && is_in_scrollback(&con->sel_end)) {
-		if (con->sel_start.line->sb_id > con->sel_end.line->sb_id)
-			swap_selections(con);
-		return;
-	}
-
-	/* so both are not in scroll back buffer and can't be equal */
+	/* so both are not in scroll back buffer and are not on the same line */
 	for (i = 0; i < con->size_y; i++) {
-		if (con->lines[i] == con->sel_end.line) {
-			swap_selections(con);
-			return;
-		}
-		if (con->lines[i] == con->sel_start.line)
-			return;
+		if (con->lines[i] == b->line)
+			return false;
+
+		if (con->lines[i] == a->line)
+			return true;
 	}
+	// Should not happen
+	return true;
 }
 
 SHL_EXPORT
@@ -239,8 +216,9 @@ void tsm_screen_selection_start(struct tsm_screen *con,
 	con->age = con->age_cnt;
 
 	con->sel_active = true;
-	selection_set(con, &con->sel_start, posx, posy);
-	memcpy(&con->sel_end, &con->sel_start, sizeof(con->sel_end));
+	selection_set(con, &con->sel_begin, posx, posy);
+	con->sel_start = con->sel_begin;
+	con->sel_end = con->sel_begin;
 }
 
 SHL_EXPORT
@@ -248,6 +226,8 @@ void tsm_screen_selection_target(struct tsm_screen *con,
 				 unsigned int posx,
 				 unsigned int posy)
 {
+	struct selection_pos target;
+
 	if (!con || !con->sel_active || posx >= con->size_x || posy >= con->size_y)
 		return;
 
@@ -255,9 +235,14 @@ void tsm_screen_selection_target(struct tsm_screen *con,
 	/* TODO: more sophisticated ageing */
 	con->age = con->age_cnt;
 
-	selection_set(con, &con->sel_end, posx, posy);
-	/* always normalize the selection */
-	norm_selection(con);
+	selection_set(con, &target, posx, posy);
+	if (selection_is_before(con, &con->sel_begin, &target)) {
+		con->sel_start = con->sel_begin;
+		con->sel_end = target;
+	} else {
+		con->sel_start = target;
+		con->sel_end = con->sel_begin;
+	}
 }
 
 SHL_EXPORT
@@ -284,7 +269,7 @@ void tsm_screen_selection_word(struct tsm_screen *con,
 static unsigned int get_line_index(struct tsm_screen *con, struct line *line)
 {
 	unsigned int i = 0;
-	
+
 	if (line->sb_id)
 		return 0;
 

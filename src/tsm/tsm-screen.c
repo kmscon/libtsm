@@ -191,6 +191,8 @@ static void clear_selection_on_line(struct tsm_screen *con, struct line *line)
 {
 	if (!con->sel_active)
 		return;
+	if (con->sel_begin.line == line)
+		con->sel_begin.line = NULL;
 	if (con->sel_start.line == line)
 		con->sel_start.line = NULL;
 	if (con->sel_end.line == line)
@@ -259,7 +261,7 @@ static void remove_from_sb(struct tsm_screen *con, unsigned int num)
 
 		if (con->sb.pos == tmp) {
 			con->sb.pos_num = con->sb.count;
-			con->sb.pos = NULL;	
+			con->sb.pos = NULL;
 		}
 		/*
 		 * Copy the cells from the scrollback buffer to the line. scrollback buffer can have a different
@@ -840,9 +842,11 @@ void tsm_screen_clear_sb(struct tsm_screen *con)
 	con->age = con->age_cnt;
 
 	if (con->sel_active) {
+		if (con->sel_begin.line && is_in_scrollback(&con->sel_begin))
+			con->sel_begin.line = NULL;
 		if (con->sel_start.line && is_in_scrollback(&con->sel_start))
 			con->sel_start.line = NULL;
-		if (con->sel_end.line && is_in_scrollback(&con->sel_end)) 
+		if (con->sel_end.line && is_in_scrollback(&con->sel_end))
 			con->sel_end.line = NULL;
 	}
 	shl_dlist_for_each_safe(iter, safe, &con->sb.list) {
