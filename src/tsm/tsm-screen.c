@@ -1697,3 +1697,21 @@ void tsm_screen_erase_screen(struct tsm_screen *con, bool protect)
 	screen_erase_region(con, 0, 0, con->size_x - 1, con->size_y - 1,
 			     protect);
 }
+
+SHL_EXPORT
+enum tsm_screen_cursor_style tsm_screen_get_cursor_style(struct tsm_screen *con)
+{
+	if (!con)
+		return 0;
+
+	return con->cstyle;
+}
+
+SHL_EXPORT
+void tsm_screen_set_cursor_style(struct tsm_screen *con, enum tsm_screen_cursor_style type)
+{
+	if (!con)
+		return;
+
+	con->cstyle = type;
+}

@@ -143,6 +143,7 @@ struct vte_saved_state {
 	struct tsm_screen_attr cattr;
 	tsm_vte_charset **gl;
 	tsm_vte_charset **gr;
+	enum tsm_screen_cursor_style cursor_style;
 	bool wrap_mode;
 	bool origin_mode;
 };
@@ -782,6 +783,7 @@ static void reset_state(struct tsm_vte *vte)
 	vte->saved_state.wrap_mode = true;
 	vte->saved_state.gl = &vte->g0;
 	vte->saved_state.gr = &vte->g1;
+	vte->saved_state.cursor_style = TSM_SCREEN_CURSOR_DEFAULT;
 
 	copy_fcolor(&vte->saved_state.cattr, &vte->def_attr);
 	copy_bcolor(&vte->saved_state.cattr, &vte->def_attr);
@@ -803,6 +805,7 @@ static void save_state(struct tsm_vte *vte)
 	vte->saved_state.gr = vte->gr;
 	vte->saved_state.wrap_mode = vte->flags & TSM_VTE_FLAG_AUTO_WRAP_MODE;
 	vte->saved_state.origin_mode = vte->flags & TSM_VTE_FLAG_ORIGIN_MODE;
+	vte->saved_state.cursor_style = tsm_screen_get_cursor_style(vte->con);
 }
 
 static void restore_state(struct tsm_vte *vte)
@@ -815,6 +818,7 @@ static void restore_state(struct tsm_vte *vte)
 		tsm_screen_set_def_attr(vte->con, &vte->cattr);
 	vte->gl = vte->saved_state.gl;
 	vte->gr = vte->saved_state.gr;
+	tsm_screen_set_cursor_style(vte->con, vte->saved_state.cursor_style);
 
 	if (vte->saved_state.wrap_mode) {
 		vte->flags |= TSM_VTE_FLAG_AUTO_WRAP_MODE;
@@ -2134,21 +2138,28 @@ static void do_csi(struct tsm_vte *vte, uint32_t data)
 		num = vte->csi_argv[0];
 		tsm_screen_repeat_char(vte->con, num);
 		break;
-	case 'q': /* DECLL - Load LEDs */
-		num = vte->csi_argv[0];
-		if (num <= 0) {
-			vte->led_state = 0;
-		} else if (num == 1) {
-			vte->led_state |= TSM_VTE_LED_SCROLL_LOCK;
-		} else if (num == 2) {
-			vte->led_state |= TSM_VTE_LED_NUM_LOCK;
-		} else if (num == 3) {
-			vte->led_state |= TSM_VTE_LED_CAPS_LOCK;
+	case 'q': /* DECLL - Load LEDs / DECSCUSR - Set Cursor Style */
+		if (vte->csi_flags & CSI_SPACE) {
+			num = vte->csi_argv[0];
+			if (num < 0)
+				num = 0;
+			tsm_screen_set_cursor_style(vte->con, num);
 		} else {
-			break;
+			num = vte->csi_argv[0];
+			if (num <= 0) {
+				vte->led_state = 0;
+			} else if (num == 1) {
+				vte->led_state |= TSM_VTE_LED_SCROLL_LOCK;
+			} else if (num == 2) {
+				vte->led_state |= TSM_VTE_LED_NUM_LOCK;
+			} else if (num == 3) {
+				vte->led_state |= TSM_VTE_LED_CAPS_LOCK;
+			} else {
+				break;
+			}
+			if (vte->led_cb)
+				vte->led_cb(vte, vte->led_state, vte->led_data);
 		}
-		if (vte->led_cb)
-			vte->led_cb(vte, vte->led_state, vte->led_data);
 		break;
 	default:
 		llog_debug(vte, "unhandled CSI sequence %c", data);

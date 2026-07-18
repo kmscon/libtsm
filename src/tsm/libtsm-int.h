@@ -127,35 +127,37 @@ struct tsm_screen {
 	struct tsm_screen_attr def_attr_main;
 
 	/* ageing */
-	tsm_age_t age_cnt;		/* current age counter */
-	unsigned int age_reset : 1;	/* age-overflow flag */
+	tsm_age_t age_cnt;			/* current age counter */
+	unsigned int age_reset : 1;		/* age-overflow flag */
 
 	/* current buffer */
-	unsigned int size_x;		/* width of screen */
-	unsigned int size_y;		/* height of screen */
-	unsigned int margin_top;	/* top-margin index */
-	unsigned int margin_bottom;	/* bottom-margin index */
-	unsigned int line_num;		/* real number of allocated lines */
-	struct line **lines;		/* active lines; copy of main/alt */
-	struct line **main_lines;	/* real main lines */
-	struct line **alt_lines;	/* real alternative lines */
-	tsm_age_t age;			/* whole screen age */
+	unsigned int size_x;			/* width of screen */
+	unsigned int size_y;			/* height of screen */
+	unsigned int margin_top;		/* top-margin index */
+	unsigned int margin_bottom;		/* bottom-margin index */
+	unsigned int line_num;			/* real number of allocated lines */
+	struct line **lines;			/* active lines; copy of main/alt */
+	struct line **main_lines;		/* real main lines */
+	struct line **alt_lines;		/* real alternative lines */
+	tsm_age_t age;				/* whole screen age */
 
 	struct tsm_scrollback sb;
 
 	/* cursor: positions are always in-bound, but cursor_x might be
 	 * bigger than size_x if new-line is pending */
-	unsigned int cursor_x;		/* current cursor x-pos */
-	unsigned int cursor_y;		/* current cursor y-pos */
+	unsigned int cursor_x;			/* current cursor x-pos */
+	unsigned int cursor_y;			/* current cursor y-pos */
+
+	enum tsm_screen_cursor_style cstyle;	/* cursor shape */
 
 	/* tab ruler */
-	bool *tab_ruler;		/* tab-flag for all cells of one row */
+	bool *tab_ruler;			/* tab-flag for all cells of one row */
 
 	/* selection */
 	bool sel_active;
-	struct selection_pos sel_begin; /* First cell selected */
-	struct selection_pos sel_start; /* First cell to copy in terminal order */
-	struct selection_pos sel_end;   /* Last cell to copy */
+	struct selection_pos sel_begin;		/* First cell selected */
+	struct selection_pos sel_start;		/* First cell to copy in terminal order */
+	struct selection_pos sel_end;		/* Last cell to copy */
 
 	/* draw2 interface */
 	struct tsm_screen_cell *cells;
