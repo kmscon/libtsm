@@ -198,6 +198,16 @@ struct tsm_screen_cell {
 	tsm_screen_attr2_t attr2;     /* glyph attributes */
 };
 
+enum tsm_screen_cursor_style {
+	TSM_SCREEN_CURSOR_DEFAULT		= 0,
+	TSM_SCREEN_CURSOR_BLOCK_BLINK		= 1,
+	TSM_SCREEN_CURSOR_BLOCK_STEADY		= 2,
+	TSM_SCREEN_CURSOR_UNDERLINE_BLINK	= 3,
+	TSM_SCREEN_CURSOR_UNDERLINE_STEADY	= 4,
+	TSM_SCREEN_CURSOR_VBAR_BLINK		= 5,
+	TSM_SCREEN_CURSOR_VBAR_STEADY		= 6,
+};
+
 typedef int (*tsm_screen_draw_cb) (struct tsm_screen *con,
 				   uint64_t id,
 				   const uint32_t *ch,
@@ -295,6 +305,9 @@ tsm_age_t tsm_screen_draw(struct tsm_screen *con, tsm_screen_draw_cb draw_cb,
 			  void *data);
 
 const struct tsm_screen_cell *tsm_screen_draw2(struct tsm_screen *con);
+
+enum tsm_screen_cursor_style tsm_screen_get_cursor_style(struct tsm_screen *con);
+void tsm_screen_set_cursor_style(struct tsm_screen *con, enum tsm_screen_cursor_style type);
 
 /** @} */
 

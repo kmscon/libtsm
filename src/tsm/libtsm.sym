@@ -153,3 +153,9 @@ LIBTSM_4_6 {
 global:
 	tsm_screen_draw2;
 } LIBTSM_4_5;
+
+LIBTSM_4_7 {
+global:
+	tsm_screen_get_cursor_style;
+	tsm_screen_set_cursor_style;
+} LIBTSM_4_6;
