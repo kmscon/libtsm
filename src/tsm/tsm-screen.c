@@ -243,7 +243,6 @@ static void link_to_scrollback(struct tsm_screen *con, struct line *line)
 static void remove_from_sb(struct tsm_screen *con, unsigned int num)
 {
 	struct line *tmp;
-	int i, copy_len;
 
 	/* TODO: more sophisticated ageing */
 	con->age = con->age_cnt;
@@ -256,6 +255,10 @@ static void remove_from_sb(struct tsm_screen *con, unsigned int num)
 
 	while (num--) {
 		tmp = shl_dlist_last(&con->sb.list, struct line, list);
+
+		if (tmp->size < con->size_x)
+			if (line_resize(con, tmp, con->size_x) < 0)
+				goto end_sbpos;
 		shl_dlist_unlink(&tmp->list);
 		--con->sb.count;
 
@@ -263,23 +266,13 @@ static void remove_from_sb(struct tsm_screen *con, unsigned int num)
 			con->sb.pos_num = con->sb.count;
 			con->sb.pos = NULL;
 		}
-		/*
-		 * Copy the cells from the scrollback buffer to the line. scrollback buffer can have a different
-		 * size as current lines, because resizing doesn't resize lines in scrollback buffer.
-		 */
-		copy_len = shl_min(tmp->size, con->lines[num]->size);
-		memcpy(con->lines[num]->cells, tmp->cells, copy_len * sizeof(struct cell));
-		for (i = copy_len; i < con->size_x; i++)
-			screen_cell_init(con, &con->lines[num]->cells[i]);
+		clear_selection_on_line(con, con->lines[num]);
+		line_free(con->lines[num]);
+		tmp->sb_id = 0;
+		con->lines[num] = tmp;
 		con->lines[num]->age = con->age_cnt;
-
-		if (con->sel_active && con->sel_start.line == tmp)
-			con->sel_start.line = con->lines[num];
-		if (con->sel_active && con->sel_end.line == tmp)
-			con->sel_end.line = con->lines[num];
-
-		line_free(tmp);
 	}
+end_sbpos:
 	if (!con->sb.pos)
 		con->sb.pos_num = con->sb.count;
 }
@@ -597,7 +590,7 @@ int tsm_screen_resize(struct tsm_screen *con, unsigned int x,
 		      unsigned int y)
 {
 	struct line **cache;
-	unsigned int i, j, width, diff, start;
+	unsigned int i, width, diff;
 	int ret;
 	bool *tab_ruler;
 
@@ -676,29 +669,6 @@ int tsm_screen_resize(struct tsm_screen *con, unsigned int x,
 	}
 
 	screen_inc_age(con);
-
-	/* clear expansion/padding area */
-	start = x;
-	if (x > con->size_x)
-		start = con->size_x;
-	for (j = 0; j < con->line_num; ++j) {
-		/* main-lines may go into SB, so clear all cells */
-		i = 0;
-		if (j < con->size_y)
-			i = start;
-
-		for ( ; i < con->main_lines[j]->size; ++i)
-			screen_cell_init_generic(con, &con->main_lines[j]->cells[i],
-				&con->def_attr_main);
-
-		/* alt-lines never go into SB, only clear visible cells */
-		i = 0;
-		if (j < con->size_y)
-			i = con->size_x;
-
-		for ( ; i < x; ++i)
-			screen_cell_init(con, &con->alt_lines[j]->cells[i]);
-	}
 
 	/* xterm destroys margins on resize, so do we */
 	con->margin_top = 0;
