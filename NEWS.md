@@ -1,5 +1,21 @@
 # libtsm Release News
 
+## CHANGES WITH 4.7.0
+### New cursor interface:
+A new tsm_screen_get_cursor_style() interface is available, that provides the current
+style of the cursor.
+
+### New features
+* screen/vte: add cursor style support via DECSCUSR (CSI Ps SP q) by @underscoreevelyn in https://github.com/kmscon/libtsm/pull/58
+
+### Bug Fixes
+* Fix backward selection by @kdj0c in https://github.com/kmscon/libtsm/pull/54
+* Fix also clear the character value for multi-width character. by @kdj0c in https://github.com/kmscon/libtsm/pull/56
+* screen: don't clear cells when resizing by @kdj0c in https://github.com/kmscon/libtsm/pull/61
+
+## New Contributors
+* @underscoreevelyn made their first contribution in https://github.com/kmscon/libtsm/pull/58
+
 ## CHANGES WITH 4.6.0
 ### New draw2 interface
 A new tsm_screen_draw2() interface is available that provides a simplified drawing API.
