@@ -1485,6 +1485,10 @@ static void csi_attribute(struct tsm_vte *vte)
 			/* fallthrough */
 		case 48:
 			val = vte->csi_argv[i];
+			/* the 5/2 subcommand + its operands live in later argv slots;
+			 * bail if they would read past the parsed args (csi_argv[16] OOB). */
+			if (i + 1 >= vte->csi_argc)
+				break;
 			if (vte->csi_argv[i + 1] == 5) { // 256color mode
 				if (i + 2 >= vte->csi_argc ||
 					vte->csi_argv[i + 2] < 0) {
