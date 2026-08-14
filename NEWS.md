@@ -1,5 +1,10 @@
 # libtsm Release News
 
+## CHANGES WITH 4.7.1
+### Bug fixes
+* libtsm: fix tsm_screen_attr2_t by @kdj0c in https://github.com/kmscon/libtsm/pull/64
+* Fix 3 out of bound reads by @kdj0c in https://github.com/kmscon/libtsm/pull/65
+
 ## CHANGES WITH 4.7.0
 ### New cursor interface:
 A new tsm_screen_get_cursor_style() interface is available, that provides the current
