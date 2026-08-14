@@ -1349,6 +1349,11 @@ void tsm_screen_tab_left(struct tsm_screen *con, unsigned int num)
 	screen_inc_age(con);
 
 	x = con->cursor_x;
+
+	/* cursor_x may exceed size_x (e.g. CHT then a wide glyph at the last
+	 * column); clamp before indexing tab_ruler[0..size_x-1]. */
+	if (x > con->size_x)
+		x = con->size_x;
 	for (i = 0; i < num; ++i) {
 		for (j = x - 1; j > 0; --j) {
 			if (con->tab_ruler[j])
