@@ -180,7 +180,7 @@ typedef union{
 		uint8_t italic    : 1;
 		uint8_t underline : 1;
 		uint8_t blink     : 1;
-		uint8_t reserved  : 5;
+		uint8_t reserved  : 4;
 	};
 	uint8_t u8;
 } tsm_screen_attr2_t;
