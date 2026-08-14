@@ -1306,6 +1306,12 @@ static void greyscale_rgb(int code, uint8_t *cr, uint8_t *cg, uint8_t *cb)
 static void lookup_color(struct tsm_vte *vte, int color, uint8_t *cr,
 			 uint8_t *cg, uint8_t *cb)
 {
+	/* OSC-4 / SGR color indices are untrusted; an out-of-range (or
+	 * unsigned-overflow-negative) index would wild-read palette[]/bval[]. */
+	if (color < 0 || color > 255) {
+		*cr = *cg = *cb = 0;
+		return;
+	}
 	if (color < 16) {
 		palette_rgb(vte, color, cr, cg, cb);
 	} else if (color < 232) {
