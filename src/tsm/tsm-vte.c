@@ -2821,6 +2821,8 @@ static void vte_write_arrow(struct tsm_vte *vte, char direction, unsigned int mo
 	char code_with_modifier[6] = {'\e', '[', '1', ';', '0', 'A'};
 	char code[3] = {'\e', '[',  'A'};
 
+	vte->flags &= ~TSM_VTE_FLAG_PREPEND_ESCAPE;
+
 	int modifier = csi_modifier_from_mask(mods);
 	if (modifier) {
 		code_with_modifier[4] = modifier;
