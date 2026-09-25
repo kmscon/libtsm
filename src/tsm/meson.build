@@ -49,6 +49,6 @@ pkg = import('pkgconfig')
 pkg.generate(
     libtsm,
     name: 'libtsm',
-    url: 'https://github.com/Aetf/libtsm',
+    url: 'https://github.com/kmscon/libtsm',
     description: 'terminal-emulator state machine',
 )
