@@ -1,5 +1,13 @@
 # libtsm Release News
 
+## CHANGES WITH 4.8.0
+* vte: don't emit double escape for meta+arrow keys by @perryprog in https://github.com/kmscon/libtsm/pull/67
+* cursor blinking rate feature by @fnnFox in https://github.com/kmscon/libtsm/pull/68
+
+## New Contributors
+* @perryprog made their first contribution in https://github.com/kmscon/libtsm/pull/67
+* @fnnFox made their first contribution in https://github.com/kmscon/libtsm/pull/68
+
 ## CHANGES WITH 4.7.1
 ### Bug fixes
 * libtsm: fix tsm_screen_attr2_t by @kdj0c in https://github.com/kmscon/libtsm/pull/64
