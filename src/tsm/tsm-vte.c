@@ -2024,7 +2024,7 @@ static void do_csi(struct tsm_vte *vte, uint32_t data)
 		/* CSI_GT ('>' prefix) marks a private/DEC sequence such as
 		 * XTMODKEYS \033[>4;1m — not an SGR attribute. Guard against
 		 * misinterpreting it as e.g. SGR 4 (underline). */
-		if (!(vte->csi_flags & CSI_GT))
+		if (!(vte->csi_flags & (CSI_GT | CSI_WHAT)))
 			csi_attribute(vte);
 		break;
 	case 'p':
