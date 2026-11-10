@@ -2782,6 +2782,9 @@ void tsm_vte_input(struct tsm_vte *vte, const char *u8, size_t len)
 SHL_EXPORT
 void tsm_vte_set_backspace_sends_delete(struct tsm_vte *vte, bool enable)
 {
+	if (!vte)
+		return;
+
 	vte->backspace_sends_delete = enable;
 }
 
@@ -3413,13 +3416,19 @@ bool tsm_vte_handle_keyboard(struct tsm_vte *vte, uint32_t keysym,
 	return false;
 }
 
+SHL_EXPORT
 bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 		unsigned int cell_y, unsigned int pixel_x, unsigned int pixel_y,
 		unsigned int button, unsigned int event, unsigned char modifiers)
 {
 	char buffer[24];
 	unsigned char reply_flags = 0;
-	bool pressed = event & TSM_MOUSE_EVENT_PRESSED;
+	bool pressed;
+
+	if (!vte)
+		return false;
+
+	pressed = event & TSM_MOUSE_EVENT_PRESSED;
 
 	/* drop move event if we don't wait for move events */
 	/* In mode 1002 (BTN), accept MOVED with button pressed (drag, button >= 32) */
@@ -3520,6 +3529,7 @@ bool tsm_vte_handle_mouse(struct tsm_vte *vte, unsigned int cell_x,
 	return false;
 }
 
+SHL_EXPORT
 void tsm_vte_paste(struct tsm_vte *vte, const char *data)
 {
 	if (!vte || !data)
@@ -3529,7 +3539,7 @@ void tsm_vte_paste(struct tsm_vte *vte, const char *data)
 		const char start[] = "\e[200~";
 		const char end[] = "\e[201~";
 		char *buf;
-		int len;
+		size_t len;
 
 		len = strlen(data) + sizeof(start) + sizeof(end) + 1;
 		buf = malloc(len);

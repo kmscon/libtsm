@@ -95,7 +95,7 @@ static void word_select(struct tsm_screen *con,
 
 	line = con->sel_start.line;
 
-	if (!line || line->cells[posx].ch == ' ')
+	if (!line || posx >= line->size || line->cells[posx].ch == ' ')
 		return;
 
 	for (start = posx; start >= 0; start--) {
@@ -114,6 +114,8 @@ static void word_select(struct tsm_screen *con,
 			break;
 		}
 	}
+	if (end >= line->size)
+		end = line->size - 1;
 	con->sel_start.x = start;
 	con->sel_end.x = end;
 	con->sel_end.line = line;
