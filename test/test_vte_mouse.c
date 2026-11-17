@@ -257,6 +257,32 @@ START_TEST(test_mouse_sgr_cell_change)
 }
 END_TEST
 
+START_TEST(test_mouse_sgr_motion_after_click_tracking)
+{
+	char *msg;
+	char *expected;
+	int r;
+
+	/* click tracking, then any-motion tracking, then SGR coordinates: the
+	 * order applications commonly enable them in */
+	msg = "\e[?1000h\e[?1003h\e[?1006h";
+	tsm_vte_input(vte, msg, strlen(msg));
+
+	/* motion without a button must be reported */
+	tsm_vte_handle_mouse(vte, 1, 1, 0, 0, 0, TSM_MOUSE_EVENT_MOVED, 0);
+	expected = "\e[<35;2;2M";
+	r = memcmp(&write_buffer, expected, strlen(expected));
+	ck_assert_int_eq(r, 0);
+
+	/* and a click still is */
+	memset(&write_buffer, 0, sizeof(write_buffer));
+	tsm_vte_handle_mouse(vte, 1, 1, 0, 0, 0, TSM_MOUSE_EVENT_PRESSED, 0);
+	expected = "\e[<0;2;2M";
+	r = memcmp(&write_buffer, expected, strlen(expected));
+	ck_assert_int_eq(r, 0);
+}
+END_TEST
+
 START_TEST(test_mouse_cb_pixels)
 {
 	char *msg;
@@ -324,6 +350,7 @@ TEST_DEFINE_CASE(tests_sgr)
 	TEST(test_mouse_cb_sgr)
 	TEST(test_mouse_sgr)
 	TEST(test_mouse_sgr_cell_change)
+	TEST(test_mouse_sgr_motion_after_click_tracking)
 TEST_END_CASE
 
 TEST_DEFINE_CASE(tests_sgr_pixels)

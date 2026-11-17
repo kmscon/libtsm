@@ -1796,10 +1796,12 @@ static void csi_mode(struct tsm_vte *vte, bool set)
 			continue;
 		case TSM_VTE_MOUSE_EVENT_BTN:
 		case TSM_VTE_MOUSE_EVENT_ANY:
-			if (vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10 || vte->mouse_mode == TSM_VTE_MOUSE_MODE_VT200) {
+			if (set) {
+			    vte->mouse_event = vte->csi_argv[i];
+			} else if (vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10 || vte->mouse_mode == TSM_VTE_MOUSE_MODE_VT200) {
 			    vte->mouse_event = TSM_VTE_MOUSE_EVENT_BTN;
 			} else {
-			    vte->mouse_event = set ? vte->csi_argv[i] : 0;
+			    vte->mouse_event = 0;
 			}
 
 			if (vte->mouse_cb && vte->mouse_mode) {
