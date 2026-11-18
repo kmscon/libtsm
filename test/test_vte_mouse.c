@@ -257,6 +257,43 @@ START_TEST(test_mouse_sgr_cell_change)
 }
 END_TEST
 
+START_TEST(test_mouse_sgr_drag_encoding_first)
+{
+	char *msg;
+	char *expected;
+	int r;
+
+	/* tmux enables the encoding first and the tracking modes after it:
+	 * 1000/1002 must not replace the SGR encoding set by 1006 */
+	msg = "\e[?1006h\e[?1000h\e[?1002h";
+	tsm_vte_input(vte, msg, strlen(msg));
+
+	tsm_vte_handle_mouse(vte, 0, 0, 0, 0, TSM_MOUSE_BUTTON_LEFT, TSM_MOUSE_EVENT_PRESSED, 0);
+	expected = "\e[<0;1;1M";
+	r = memcmp(&write_buffer, expected, strlen(expected));
+	ck_assert_int_eq(r, 0);
+
+	/* drag with the left button held is reported as button 32 */
+	memset(&write_buffer, 0, sizeof(write_buffer));
+	tsm_vte_handle_mouse(vte, 4, 0, 0, 0, 32, TSM_MOUSE_EVENT_MOVED, 0);
+	expected = "\e[<32;5;1M";
+	r = memcmp(&write_buffer, expected, strlen(expected));
+	ck_assert_int_eq(r, 0);
+
+	memset(&write_buffer, 0, sizeof(write_buffer));
+	tsm_vte_handle_mouse(vte, 4, 0, 0, 0, TSM_MOUSE_BUTTON_LEFT, TSM_MOUSE_EVENT_RELEASED, 0);
+	expected = "\e[<0;5;1m";
+	r = memcmp(&write_buffer, expected, strlen(expected));
+	ck_assert_int_eq(r, 0);
+
+	/* resetting the encoding falls back to the legacy one, tracking stays */
+	memset(&write_buffer, 0, sizeof(write_buffer));
+	msg = "\e[?1006l";
+	tsm_vte_input(vte, msg, strlen(msg));
+	ck_assert_int_eq(tsm_vte_get_mouse_mode(vte), TSM_VTE_MOUSE_MODE_VT200);
+}
+END_TEST
+
 START_TEST(test_mouse_cb_pixels)
 {
 	char *msg;
@@ -324,6 +361,7 @@ TEST_DEFINE_CASE(tests_sgr)
 	TEST(test_mouse_cb_sgr)
 	TEST(test_mouse_sgr)
 	TEST(test_mouse_sgr_cell_change)
+	TEST(test_mouse_sgr_drag_encoding_first)
 TEST_END_CASE
 
 TEST_DEFINE_CASE(tests_sgr_pixels)

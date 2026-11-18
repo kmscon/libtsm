@@ -175,6 +175,12 @@ struct tsm_vte {
 	void *mouse_data;
 	unsigned int mouse_mode;
 	unsigned int mouse_event;
+	/* DECSET 9/1000 (tracking), 1002/1003 (motion) and 1006/1016
+	 * (encoding) are independent modes; keep each one separately and
+	 * derive mouse_mode/mouse_event from them in vte_update_mouse(). */
+	unsigned int mouse_track;
+	unsigned int mouse_motion;
+	unsigned int mouse_enc;
 	unsigned int mouse_last_col;
 	unsigned int mouse_last_row;
 	bool bracketed_paste;
@@ -871,6 +877,9 @@ void tsm_vte_reset(struct tsm_vte *vte)
 
 	vte->mouse_mode = 0;
 	vte->mouse_event = 0;
+	vte->mouse_track = 0;
+	vte->mouse_motion = 0;
+	vte->mouse_enc = 0;
 	vte->mouse_last_col = 0;
 	vte->mouse_last_row = 0;
 
@@ -1600,6 +1609,36 @@ static inline void set_reset_flag(struct tsm_vte *vte, bool set,
 		vte->flags &= ~flag;
 }
 
+
+static void vte_update_mouse(struct tsm_vte *vte)
+{
+	unsigned int mode, event;
+
+	mode = vte->mouse_enc ? vte->mouse_enc : vte->mouse_track;
+	/* an encoding alone (e.g. only 1006 set) does not enable reporting */
+	if (!vte->mouse_track && !vte->mouse_motion)
+		mode = 0;
+
+	if (mode == TSM_VTE_MOUSE_MODE_X10 || mode == TSM_VTE_MOUSE_MODE_VT200)
+		event = TSM_VTE_MOUSE_EVENT_BTN;
+	else if (vte->mouse_motion)
+		event = vte->mouse_motion;
+	else if (vte->mouse_track)
+		event = TSM_VTE_MOUSE_EVENT_BTN;
+	else
+		event = 0;
+
+	if (mode == vte->mouse_mode && event == vte->mouse_event)
+		return;
+
+	vte->mouse_mode = mode;
+	vte->mouse_event = event;
+	if (vte->mouse_cb)
+		vte->mouse_cb(vte, vte->mouse_event,
+			      vte->mouse_mode == TSM_VTE_MOUSE_MODE_PIXEL,
+			      vte->mouse_data);
+}
+
 static void csi_mode(struct tsm_vte *vte, bool set)
 {
 	unsigned int i;
@@ -1704,12 +1743,11 @@ static void csi_mode(struct tsm_vte *vte, bool set)
 			continue;
 		case TSM_VTE_MOUSE_MODE_X10:
 		case TSM_VTE_MOUSE_MODE_VT200:
-			vte->mouse_mode = set ? vte->csi_argv[i] : 0;
-			vte->mouse_event = TSM_VTE_MOUSE_EVENT_BTN;
-
-			if (vte->mouse_cb) {
-			    vte->mouse_cb(vte, vte->mouse_event, false, vte->mouse_data);
-			}
+			if (set)
+				vte->mouse_track = vte->csi_argv[i];
+			else if (vte->mouse_track == (unsigned int)vte->csi_argv[i])
+				vte->mouse_track = 0;
+			vte_update_mouse(vte);
 			continue;
 		case 12: /* blinking cursor */
 			/* TODO: implement */
@@ -1796,39 +1834,19 @@ static void csi_mode(struct tsm_vte *vte, bool set)
 			continue;
 		case TSM_VTE_MOUSE_EVENT_BTN:
 		case TSM_VTE_MOUSE_EVENT_ANY:
-			if (vte->mouse_mode == TSM_VTE_MOUSE_MODE_X10 || vte->mouse_mode == TSM_VTE_MOUSE_MODE_VT200) {
-			    vte->mouse_event = TSM_VTE_MOUSE_EVENT_BTN;
-			} else {
-			    vte->mouse_event = set ? vte->csi_argv[i] : 0;
-			}
-
-			if (vte->mouse_cb && vte->mouse_mode) {
-			    vte->mouse_cb(vte, vte->mouse_event, vte->mouse_mode == TSM_VTE_MOUSE_MODE_PIXEL, vte->mouse_data);
-			}
+			if (set)
+				vte->mouse_motion = vte->csi_argv[i];
+			else if (vte->mouse_motion == (unsigned int)vte->csi_argv[i])
+				vte->mouse_motion = 0;
+			vte_update_mouse(vte);
 			continue;
 		case TSM_VTE_MOUSE_MODE_SGR:
-			vte->mouse_mode = set ? vte->csi_argv[i] : 0;
-
-			if (!vte->mouse_cb) {
-			    continue;
-			}
-
-			if (!set || vte->mouse_event) {
-			    vte->mouse_cb(vte, vte->mouse_event, false, vte->mouse_data);
-			    continue;
-			}
-			continue;
 		case TSM_VTE_MOUSE_MODE_PIXEL:
-			vte->mouse_mode = set ? vte->csi_argv[i] : 0;
-
-			if (!vte->mouse_cb) {
-			    continue;
-			}
-
-			if (!set || vte->mouse_event) {
-			    vte->mouse_cb(vte, vte->mouse_event, set, vte->mouse_data);
-			    continue;
-			}
+			if (set)
+				vte->mouse_enc = vte->csi_argv[i];
+			else if (vte->mouse_enc == (unsigned int)vte->csi_argv[i])
+				vte->mouse_enc = 0;
+			vte_update_mouse(vte);
 			continue;
 		case TSM_VTE_BRACKETED_PASTE:
 			vte->bracketed_paste = set;
