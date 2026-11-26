@@ -1,5 +1,14 @@
 # libtsm Release News
 
+## CHANGES WITH 4.8.1
+* vte: Fix XTQMODKEYS interpreted has SGR 4 underline by @kdj0c in https://github.com/kmscon/libtsm/pull/71
+* Fix missing NULL checks, SHL_EXPORT, and out-of-bounds read by @0x5t4l1n in https://github.com/kmscon/libtsm/pull/72
+* vte: keep mouse tracking, motion and encoding modes independent by @quatr3ll in https://github.com/kmscon/libtsm/pull/75
+
+## New Contributors
+* @0x5t4l1n made their first contribution in https://github.com/kmscon/libtsm/pull/72
+* @quatr3ll made their first contribution in https://github.com/kmscon/libtsm/pull/75
+
 ## CHANGES WITH 4.8.0
 * vte: don't emit double escape for meta+arrow keys by @perryprog in https://github.com/kmscon/libtsm/pull/67
 * cursor blinking rate feature by @fnnFox in https://github.com/kmscon/libtsm/pull/68
